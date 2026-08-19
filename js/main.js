@@ -1,7 +1,7 @@
 import { parseReference, getVerseText, formatReferenceLabel, formatFileName, getSchlachterLabel } from "./bible.js";
 import { nextPhoto, peekNextPhoto } from "./photos.js";
-import { renderCard, ASPECT_RATIOS, THEME, WALLPAPER_SAFE_ZONE } from "./canvas.js";
-import { renderPhoneIcon } from "./icons.js";
+import { renderCard, ASPECT_RATIOS, THEME, WALLPAPER_SAFE_ZONE, FONT_STACKS } from "./canvas.js";
+import { renderPhoneIcon, renderReloadIcon } from "./icons.js";
 import { saveCard } from "./export.js";
 
 const PREVIEW_WIDTH = 640;
@@ -43,6 +43,7 @@ const state = {
   // UPLOAD_ENABLED above).
   imageSource: (!UPLOAD_ENABLED && saved.imageSource === "upload") ? "mountain" : (saved.imageSource ?? "mountain"),
   textTheme: saved.textTheme ?? "dark", // "light" = black text on white; "dark" = white text on black
+  fontStyle: saved.fontStyle ?? "modern", // "modern" | "classic" - see FONT_STACKS
   textScale: saved.textScale ?? THEME.defaultTextScale,
   stripeBottomRatio: saved.stripeBottomRatio ?? THEME.defaultStripeBottomRatio,
   photoCreditText: "",
@@ -60,6 +61,7 @@ function saveSettings() {
     bw: state.bw,
     imageSource: state.imageSource,
     textTheme: state.textTheme,
+    fontStyle: state.fontStyle,
     zoom: state.zoom,
     textScale: state.textScale,
     stripeBottomRatio: state.stripeBottomRatio,
@@ -78,12 +80,12 @@ const el = {
   refInput: document.getElementById("reference-input"),
   translationSelect: document.getElementById("translation-select"),
   refError: document.getElementById("reference-error"),
-  changePicture: document.getElementById("change-picture"),
   filterButtons: document.getElementById("filter-buttons"),
   sourceButtons: document.getElementById("source-buttons"),
   uploadInput: document.getElementById("upload-input"),
   aspectButtons: document.getElementById("aspect-buttons"),
   textThemeButtons: document.getElementById("text-theme-buttons"),
+  fontButtons: document.getElementById("font-buttons"),
   zoomSlider: document.getElementById("zoom-slider"),
   textSizeSlider: document.getElementById("text-size-slider"),
   photoError: document.getElementById("photo-error"),
@@ -151,6 +153,7 @@ function cardParams() {
     refLabel: state.refLabel,
     stripeOpacity: THEME.defaultStripeOpacity,
     textTheme: state.textTheme,
+    fontFamily: FONT_STACKS[state.fontStyle].fontFamily,
     textScale: state.textScale,
     stripeBottomRatio: state.stripeBottomRatio,
     sidePaddingRatio: state.aspectKey === "wallpaper" ? THEME.wallpaperSidePaddingRatio : undefined,
@@ -212,13 +215,17 @@ function prefetchNext(source) {
   });
 }
 
+function setSourceButtonsDisabled(disabled) {
+  for (const b of el.sourceButtons.querySelectorAll("button")) b.disabled = disabled;
+}
+
 // Loads and applies a new random photo for the given source ("mountain" or
-// "water"), used on first-ever visit, "Change picture", and switching
-// sources. `preferFile`, if given, forces that specific file as the pick
-// (only meaningful for the very first photo of a fresh cycle - see
-// nextPhoto in photos.js).
+// "water"), used on first-ever visit, clicking the already-selected source
+// button again, and switching sources. `preferFile`, if given, forces that
+// specific file as the pick (only meaningful for the very first photo of a
+// fresh cycle - see nextPhoto in photos.js).
 async function loadPhotoForSource(source, { preferFile } = {}) {
-  el.changePicture.disabled = true;
+  setSourceButtonsDisabled(true);
   try {
     const photo = await nextPhoto(source, { preferFile });
     const pre = prefetched.get(source);
@@ -236,12 +243,8 @@ async function loadPhotoForSource(source, { preferFile } = {}) {
       showError(el.photoError, "Couldn't load that photo.");
     }
   } finally {
-    el.changePicture.disabled = false;
+    setSourceButtonsDisabled(false);
   }
-}
-
-function loadNextPhoto() {
-  return loadPhotoForSource(state.imageSource);
 }
 
 // Reloading the page should show whatever photo was left on, not a new
@@ -261,7 +264,11 @@ async function restorePhoto(source, url, credit) {
 async function updateVerse() {
   const input = el.refInput.value.trim();
   if (!input) {
+    state.ref = null;
+    state.verseText = "(verse missing)";
+    state.refLabel = "";
     showError(el.refError, "");
+    render();
     return;
   }
   const ref = parseReference(input);
@@ -302,17 +309,22 @@ function updateSaveRowVisibility() {
 }
 
 // Builds a connected segmented toggle (same look for aspect ratio, text
-// theme, and photo filter). `options` is [{ key, label, renderIcon? }].
-// `renderIcon(option)`, if given, returns an element prepended to the label.
-function buildToggleGroup(container, options, selectedKey, onSelect, renderIcon) {
+// theme, and photo filter). `options` is [{ key, label }]. `renderIcon`, if
+// given, returns an element for that option or a falsy value to skip it;
+// `iconPosition` ("start", the default, or "end") controls which side of
+// the label it lands on.
+function buildToggleGroup(container, options, selectedKey, onSelect, { renderIcon, styleButton, iconPosition = "start" } = {}) {
   container.innerHTML = "";
   for (const opt of options) {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.key = opt.key;
     button.setAttribute("aria-pressed", opt.key === selectedKey ? "true" : "false");
-    if (renderIcon) button.appendChild(renderIcon(opt));
+    const icon = renderIcon ? renderIcon(opt) : null;
+    if (icon && iconPosition === "start") button.appendChild(icon);
     button.appendChild(document.createTextNode(opt.label));
+    if (icon && iconPosition === "end") button.appendChild(icon);
+    if (styleButton) styleButton(button, opt);
     button.addEventListener("click", () => {
       for (const b of container.children) {
         b.setAttribute("aria-pressed", b.dataset.key === opt.key ? "true" : "false");
@@ -392,7 +404,7 @@ function buildAspectButtons() {
     updateWallpaperSafeZoneVisibility();
     render();
     saveSettings();
-  }, renderAspectIcon);
+  }, { renderIcon: renderAspectIcon });
 }
 
 function buildFilterButtons() {
@@ -407,26 +419,23 @@ function buildFilterButtons() {
   });
 }
 
-// "upload" hides "Change picture" (there's nothing to cycle through) - the
-// canvas itself becomes the drop target instead (see wireUpload).
-function updateChangePictureVisibility() {
-  el.changePicture.hidden = state.imageSource === "upload";
-}
-
 // Switches the active image source and syncs the toggle UI to match.
 // `loadPhoto: false` is used right before loading a just-dropped file, so
 // we don't fetch-then-immediately-discard a random "upload" photo (there
-// isn't one).
+// isn't one). Rebuilds the toggle group (rather than just updating
+// aria-pressed) so the shuffle icon - see buildSourceButtons - relocates to
+// whichever button is now selected.
 function selectSource(key, { loadPhoto = true } = {}) {
   state.imageSource = key;
-  for (const b of el.sourceButtons.children) {
-    b.setAttribute("aria-pressed", b.dataset.key === key ? "true" : "false");
-  }
-  updateChangePictureVisibility();
+  buildSourceButtons();
   saveSettings();
   if (loadPhoto && key !== "upload") loadPhotoForSource(key);
 }
 
+// There's no separate "change picture" button - the currently-selected
+// source button doubles as one (shuffle icon, re-clicking it cycles to a
+// new photo for that source; buildToggleGroup already fires onSelect on
+// every click regardless of whether that option was already selected).
 function buildSourceButtons() {
   const options = [
     { key: "mountain", label: "Mountain" },
@@ -438,6 +447,9 @@ function buildSourceButtons() {
     // Clicking "Upload" also opens a file picker - drag-and-drop alone
     // isn't discoverable enough as the only way in.
     if (key === "upload") el.uploadInput.click();
+  }, {
+    renderIcon: (opt) => (opt.key === state.imageSource ? renderReloadIcon() : null),
+    iconPosition: "end",
   });
 }
 
@@ -450,6 +462,21 @@ function buildTextThemeButtons() {
     state.textTheme = key;
     render();
     saveSettings();
+  });
+}
+
+// Each option's own label previews its font, so the choice is visible
+// before picking it rather than just named.
+function buildFontButtons() {
+  const options = Object.entries(FONT_STACKS).map(([key, font]) => ({ key, label: font.label, font }));
+  buildToggleGroup(el.fontButtons, options, state.fontStyle, (key) => {
+    state.fontStyle = key;
+    render();
+    saveSettings();
+  }, {
+    styleButton: (button, opt) => {
+      button.style.fontFamily = opt.font.fontFamily;
+    },
   });
 }
 
@@ -598,8 +625,6 @@ function wireEvents() {
     saveSettings();
   });
 
-  el.changePicture.addEventListener("click", loadNextPhoto);
-
   el.zoomSlider.addEventListener("input", () => {
     state.zoom = Number(el.zoomSlider.value) / 100;
     showGrid();
@@ -634,16 +659,17 @@ function loadInitialPhoto() {
 }
 
 // Canvas text doesn't wait for webfonts the way DOM text does - drawing
-// before "Atkinson Hyperlegible Next" finishes loading silently falls back
-// to the default sans-serif and never repaints once the font arrives. Force
-// both weights we actually draw with to load before the first render.
+// before a font finishes loading silently falls back to the default
+// sans-serif and never repaints once the font arrives. Force both weights
+// we actually draw with, for both font stacks (so switching "modern"/
+// "classic" doesn't flash a fallback either), to load before first render.
 async function ensureFontsLoaded() {
   if (!document.fonts) return;
   try {
-    await Promise.all([
-      document.fonts.load(`${THEME.verseWeight} 16px ${THEME.fontFamily}`),
-      document.fonts.load(`italic ${THEME.refWeight} 16px ${THEME.fontFamily}`),
-    ]);
+    await Promise.all(Object.values(FONT_STACKS).flatMap((font) => [
+      document.fonts.load(`${THEME.verseWeight} 16px ${font.fontFamily}`),
+      document.fonts.load(`italic ${THEME.refWeight} 16px ${font.fontFamily}`),
+    ]));
   } catch {
     // Font failed to load (offline, blocked, etc.) - fall back silently.
   }
@@ -659,8 +685,8 @@ async function init() {
   buildFilterButtons();
   buildSourceButtons();
   buildTextThemeButtons();
+  buildFontButtons();
   updateSaveRowVisibility();
-  updateChangePictureVisibility();
   updateWallpaperSafeZoneVisibility();
   wireDrag();
   if (UPLOAD_ENABLED) wireUpload();

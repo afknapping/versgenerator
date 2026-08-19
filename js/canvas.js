@@ -2,7 +2,6 @@
 // keep easily adjustable. These drive both the live preview canvas and the
 // export canvas (same draw function), so tweaking a number here changes both.
 export const THEME = {
-  fontFamily: '"Atkinson Hyperlegible Next", sans-serif',
   verseWeight: 800,
   verseFontRatio: 0.048, // verse font size as a fraction of canvas width, at textScale 1
   verseLineHeightRatio: 1.3,
@@ -36,6 +35,15 @@ export const THEME = {
 };
 
 export const SILVERTONE_FILTER = "grayscale(0.9) contrast(1.15) brightness(1.08)";
+
+// "Modern" is the app's original sans-serif; "classic" is the earmarked
+// serif alternative for a more traditional look. Both need the same weight
+// range loaded (see ensureFontsLoaded in main.js) since verse/reference text
+// use extrabold/light regardless of which is active.
+export const FONT_STACKS = {
+  modern: { label: "Modern", fontFamily: '"Atkinson Hyperlegible Next", sans-serif' },
+  classic: { label: "Classic", fontFamily: '"EB Garamond", serif' },
+};
 
 export const ASPECT_RATIOS = {
   portrait: { label: "3:4", w: 3, h: 4 },
@@ -101,6 +109,7 @@ function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom,
 // drag gestures against the current stripe rectangle).
 export function computeLayout(ctx, canvasWidth, canvasHeight, {
   verseText, textScale, stripeBottomRatio, sidePaddingRatio = THEME.stripeSidePaddingRatio,
+  fontFamily = FONT_STACKS.modern.fontFamily,
 }) {
   const versePx = canvasWidth * THEME.verseFontRatio * textScale;
   const refPx = versePx; // reference line matches the verse text size
@@ -112,7 +121,7 @@ export function computeLayout(ctx, canvasWidth, canvasHeight, {
   const textMaxWidth = canvasWidth - sidePadding * 2;
   const verseLineHeight = versePx * THEME.verseLineHeightRatio;
 
-  ctx.font = `${THEME.verseWeight} ${versePx}px ${THEME.fontFamily}`;
+  ctx.font = `${THEME.verseWeight} ${versePx}px ${fontFamily}`;
   const verseLines = wrapText(ctx, verseText, textMaxWidth);
   const verseBlockHeight = verseLines.length * verseLineHeight;
   const stripeHeight = vPadding * 2 + verseBlockHeight + refGap + refPx;
@@ -141,13 +150,14 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
   textScale,
   stripeBottomRatio,
   sidePaddingRatio,
+  fontFamily = FONT_STACKS.modern.fontFamily,
   credit,
 }) {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
   drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw);
 
-  const layout = computeLayout(ctx, canvasWidth, canvasHeight, { verseText, textScale, stripeBottomRatio, sidePaddingRatio });
+  const layout = computeLayout(ctx, canvasWidth, canvasHeight, { verseText, textScale, stripeBottomRatio, sidePaddingRatio, fontFamily });
   const { versePx, refPx, vPadding, refGap, verseLines, verseLineHeight, verseBlockHeight, stripeY, stripeHeight } = layout;
 
   // "light" = black text on a white stripe (default); "dark" = inverted.
@@ -164,14 +174,14 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
   ctx.fillStyle = verseColor;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `${THEME.verseWeight} ${versePx}px ${THEME.fontFamily}`;
+  ctx.font = `${THEME.verseWeight} ${versePx}px ${fontFamily}`;
   verseLines.forEach((line, i) => {
     const y = stripeY + vPadding + verseLineHeight * (i + 0.5);
     ctx.fillText(line, canvasWidth / 2, y);
   });
 
   // Reference line.
-  ctx.font = `italic ${THEME.refWeight} ${refPx}px ${THEME.fontFamily}`;
+  ctx.font = `italic ${THEME.refWeight} ${refPx}px ${fontFamily}`;
   ctx.fillStyle = refColor;
   const refY = stripeY + vPadding + verseBlockHeight + refGap + refPx / 2;
   ctx.fillText(refLabel, canvasWidth / 2, refY);
@@ -183,7 +193,7 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
   if (credit) {
     const creditPx = canvasWidth * THEME.creditFontRatio;
     const creditY = canvasHeight - canvasWidth * THEME.creditBottomMarginRatio;
-    ctx.font = `${THEME.refWeight} ${creditPx}px ${THEME.fontFamily}`;
+    ctx.font = `${THEME.refWeight} ${creditPx}px ${fontFamily}`;
     ctx.fillStyle = `rgba(255, 255, 255, ${THEME.creditOpacity})`;
     ctx.textBaseline = "alphabetic";
     ctx.fillText(credit, canvasWidth / 2, creditY);

@@ -332,8 +332,7 @@ button:hover {
   flex-wrap: wrap;
 }
 
-.save-row button,
-#change-picture {
+.save-row button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -366,13 +365,13 @@ button:hover {
   align-items: stretch;
 }
 
-#change-picture[hidden] {
-  display: none;
+.icon-download,
+.icon-reload {
+  flex-shrink: 0;
 }
 
-.icon-download,
-.icon-shuffle {
-  flex-shrink: 0;
+.icon-reload {
+  margin-left: auto;
 }
 
 .save-row[hidden] {

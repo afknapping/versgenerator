@@ -79,13 +79,16 @@ function cleanKjvText(text) {
     .trim();
 }
 
-// Schlachter 2000 source uses "[word]" two ways: (1) a compound-word split,
-// e.g. "[Stifts-]Hütte" - just drop the brackets to rejoin it; (2) a
-// footnote reference, e.g. "[sehr]a hat" - a single letter directly after
-// "]" with a word boundary right after it. Strip that letter too in case (2).
+// Schlachter 2000 source has two things to strip for plain verse-card text:
+// (1) "[word]" used either as a compound-word split, e.g. "[Stifts-]Hütte"
+// (just drop the brackets to rejoin it), or wrapping a footnoted word; (2) a
+// footnote marker itself - a single lowercase letter glued directly to the
+// end of a word or closing punctuation with no space, e.g. "Denken«.b" or
+// "[sehr]a hat" - sequential a, b, c... per chapter. Strip the letter first
+// (while "]" is still there to anchor case (2)), then the brackets.
 function cleanSchlachter2000Text(text) {
   return text
-    .replace(/\]([a-z])(?=[\s.,;:!?)]|$)/g, "]")
+    .replace(/([.!?:;,»«)\]])([a-z])(?=[\s.,;:!?)]|$)/g, "$1")
     .replace(/\[([^\]]*)\]/g, "$1");
 }
 

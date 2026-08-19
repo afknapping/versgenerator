@@ -6,7 +6,7 @@
   <title>Versgenerator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -41,6 +41,12 @@
           </div>
           <p id="reference-error" class="error" hidden></p>
 
+          <div class="control-divider"></div>
+
+          <div class="control-row">
+            <div id="font-buttons" class="toggle-group"></div>
+          </div>
+
           <div class="control-row control-col">
             <label for="text-size-slider">Text size</label>
             <input id="text-size-slider" type="range" min="20" max="160" value="100" />
@@ -61,19 +67,6 @@
           <div class="control-row">
             <div id="source-buttons" class="toggle-group"></div>
           </div>
-
-          <div class="control-row">
-            <button id="change-picture" type="button">
-              <svg class="icon-shuffle" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="16 3 21 3 21 8"></polyline>
-                <line x1="4" y1="20" x2="21" y2="3"></line>
-                <polyline points="21 16 21 21 16 21"></polyline>
-                <line x1="15" y1="15" x2="21" y2="21"></line>
-                <line x1="4" y1="4" x2="9" y2="9"></line>
-              </svg>
-              Change picture
-            </button>
-          </div>
           <p id="photo-error" class="error" hidden></p>
 
           <div class="control-row control-col">
@@ -85,6 +78,8 @@
             <div id="filter-buttons" class="toggle-group"></div>
           </div>
         </section>
+
+        <div class="control-divider"></div>
 
         <section id="save-standard" class="save-row save-col">
           <button id="save-standard-btn" type="button">

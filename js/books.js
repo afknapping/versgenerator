@@ -136,7 +136,7 @@ export const BOOKS = [
     kjv: "Psalms",
     de: "Psalmen",
     schlachter: "Die Psalmen",
-    aliases: ["Ps", "Psalmen", "Psalms"],
+    aliases: ["Ps", "Psalm", "Psalmen", "Psalms"],
   },
   {
     id: "PRO",
