@@ -47,7 +47,8 @@ body {
   flex-direction: column;
   gap: 18px;
   background: var(--panel);
-  padding: 16px;
+  --side-padding: 16px;
+  padding: var(--side-padding);
   border-radius: 12px;
   transition: opacity 0.4s ease;
   /* Capped and internally scrollable (rather than letting the whole page
@@ -109,6 +110,13 @@ body {
 .control-row.control-col label {
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.control-divider {
+  height: 2px;
+  background: var(--accent);
+  margin: 4px calc(-1 * var(--side-padding));
+  flex-shrink: 0;
 }
 
 #reference-input {
@@ -248,6 +256,68 @@ button:hover {
   opacity: 1;
 }
 
+/* Phone wallpaper mode: shows where lock-screen chrome (clock, shortcuts,
+   nav bar) would sit, so verse text doesn't end up hidden behind it. Fades
+   in/out together with the rule-of-thirds grid above (same interaction
+   trigger, via showGrid) rather than staying on - purely a DOM guide, never
+   drawn into the exported canvas. [hidden] is the hard switch for whether
+   this aspect ratio even applies at all. */
+.safe-zone-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.safe-zone-overlay.visible {
+  opacity: 1;
+}
+
+.safe-zone-overlay[hidden] {
+  display: none;
+}
+
+.safe-zone-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 90, 90, 0.22),
+    rgba(255, 90, 90, 0.22) 6px,
+    rgba(255, 90, 90, 0.1) 6px,
+    rgba(255, 90, 90, 0.1) 12px
+  );
+}
+
+.safe-zone-top {
+  top: 0;
+  height: 43%;
+  align-items: flex-end;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.6);
+}
+
+.safe-zone-bottom {
+  bottom: 0;
+  height: 29%;
+  align-items: flex-start;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.6);
+}
+
+.safe-zone-band span {
+  font-size: 0.7rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
 /* Upload mode: the canvas doubles as a (stealth - no visible affordance
    until a drag is in progress) drop zone for a local image file. */
 #preview-canvas.drop-active {
@@ -285,6 +355,10 @@ button:hover {
 #save-highres-btn {
   color: #fff;
   text-decoration: underline;
+}
+
+#save-highres-btn[hidden] {
+  display: none;
 }
 
 .save-row.save-col {
@@ -329,7 +403,8 @@ button:hover {
     right: 0;
     background: var(--panel-overlay);
     border-radius: 12px 0 0 12px;
-    padding: 4px;
+    --side-padding: 4px;
+    padding: var(--side-padding);
     gap: 8px;
     z-index: 1;
   }

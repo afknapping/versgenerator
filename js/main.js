@@ -1,6 +1,7 @@
 import { parseReference, getVerseText, formatReferenceLabel, formatFileName, getSchlachterLabel } from "./bible.js";
 import { nextPhoto, peekNextPhoto } from "./photos.js";
-import { renderCard, ASPECT_RATIOS, THEME } from "./canvas.js";
+import { renderCard, ASPECT_RATIOS, THEME, WALLPAPER_SAFE_ZONE } from "./canvas.js";
+import { renderPhoneIcon } from "./icons.js";
 import { saveCard } from "./export.js";
 
 const PREVIEW_WIDTH = 640;
@@ -95,6 +96,7 @@ const el = {
   saveHdBtn: document.getElementById("save-hd-btn"),
   save4kBtn: document.getElementById("save-4k-btn"),
   gridOverlay: document.getElementById("grid-overlay"),
+  wallpaperSafeOverlay: document.getElementById("wallpaper-safe-overlay"),
   side: document.querySelector(".side"),
 };
 
@@ -111,10 +113,12 @@ let gridFadeTimer = null;
 function showGrid() {
   el.gridOverlay.classList.add("visible");
   el.side.classList.add("dimmed");
+  if (state.aspectKey === "wallpaper") el.wallpaperSafeOverlay.classList.add("visible");
   clearTimeout(gridFadeTimer);
   gridFadeTimer = setTimeout(() => {
     el.gridOverlay.classList.remove("visible");
     el.side.classList.remove("dimmed");
+    el.wallpaperSafeOverlay.classList.remove("visible");
   }, GRID_FADE_DELAY);
 }
 
@@ -149,6 +153,7 @@ function cardParams() {
     textTheme: state.textTheme,
     textScale: state.textScale,
     stripeBottomRatio: state.stripeBottomRatio,
+    sidePaddingRatio: state.aspectKey === "wallpaper" ? THEME.wallpaperSidePaddingRatio : undefined,
     credit: state.photoCreditText,
   };
 }
@@ -286,11 +291,14 @@ async function updateVerse() {
 }
 
 // 16:9 gets its own HD/4K save buttons; every other ratio gets the
-// standard/high-resolution pair.
+// standard/high-resolution pair - except phone wallpaper, where "standard"
+// is already sized for a retina phone screen, so the high-res option is
+// redundant.
 function updateSaveRowVisibility() {
   const isWide = state.aspectKey === "wide";
   el.saveStandardRow.hidden = isWide;
   el.saveWideRow.hidden = !isWide;
+  el.saveHighresBtn.hidden = state.aspectKey === "wallpaper";
 }
 
 // Builds a connected segmented toggle (same look for aspect ratio, text
@@ -339,25 +347,52 @@ function renderAspectSwatch(opt) {
   return swatch;
 }
 
+// Phone wallpaper mode shows a fixed phone icon instead of a proportion
+// swatch - a 9:18 rectangle wouldn't read as meaningfully different from
+// 3:4 at this size, so a recognizable glyph communicates it faster.
+function renderAspectIcon(opt) {
+  return opt.key === "wallpaper" ? renderPhoneIcon() : renderAspectSwatch(opt);
+}
+
+function updateWallpaperSafeZoneVisibility() {
+  el.wallpaperSafeOverlay.hidden = state.aspectKey !== "wallpaper";
+}
+
+// Non-wallpaper ratios have no reserved zones, so their whole canvas height
+// is usable for the stripe; wallpaper mode reserves a chunk of it for
+// lock-screen chrome (see WALLPAPER_SAFE_ZONE), leaving proportionally less
+// room - the height-factor calculation below needs to scale text against
+// this *usable* height, not the raw canvas height, or it treats wallpaper's
+// much-taller canvas as if all of it were free for text.
+function usableHeightFraction(key) {
+  return key === "wallpaper" ? 1 - WALLPAPER_SAFE_ZONE.topRatio - WALLPAPER_SAFE_ZONE.bottomRatio : 1;
+}
+
 function buildAspectButtons() {
   const options = Object.entries(ASPECT_RATIOS).map(([key, ratio]) => ({ key, label: ratio.label, ratio }));
   buildToggleGroup(el.aspectButtons, options, state.aspectKey, (key) => {
     // Preview/export width is held fixed per ratio, so canvas *height*
-    // changes with the ratio - scale text to track that height change so
-    // it keeps roughly the same relative size instead of the same textScale
-    // looking bigger/smaller as the frame gets shorter/taller.
+    // changes with the ratio - scale text to track that (usable) height
+    // change so it keeps roughly the same relative size instead of the same
+    // textScale looking bigger/smaller as the frame gets shorter/taller.
     const oldRatio = ASPECT_RATIOS[state.aspectKey];
     const newRatio = ASPECT_RATIOS[key];
-    const heightFactor = (newRatio.h / newRatio.w) / (oldRatio.h / oldRatio.w);
+    const oldUsable = (oldRatio.h / oldRatio.w) * usableHeightFraction(state.aspectKey);
+    const newUsable = (newRatio.h / newRatio.w) * usableHeightFraction(key);
+    const heightFactor = newUsable / oldUsable;
     state.textScale = Math.min(THEME.maxTextScale, Math.max(THEME.minTextScale, state.textScale * heightFactor));
     el.textSizeSlider.value = Math.round(state.textScale * 100);
 
     state.aspectKey = key;
+    // Keeps the stripe clear of the reserved bottom zone by default - still
+    // freely draggable from there like any other ratio.
+    if (key === "wallpaper") state.stripeBottomRatio = THEME.wallpaperSafeStripeBottomRatio;
     resizePreviewCanvas();
     updateSaveRowVisibility();
+    updateWallpaperSafeZoneVisibility();
     render();
     saveSettings();
-  }, renderAspectSwatch);
+  }, renderAspectIcon);
 }
 
 function buildFilterButtons() {
@@ -626,6 +661,7 @@ async function init() {
   buildTextThemeButtons();
   updateSaveRowVisibility();
   updateChangePictureVisibility();
+  updateWallpaperSafeZoneVisibility();
   wireDrag();
   if (UPLOAD_ENABLED) wireUpload();
   wireEvents();

@@ -9,6 +9,12 @@ export const THEME = {
   refWeight: 300, // reference line font size matches the verse text (see refPx in computeLayout)
   refGapRatio: 0.03, // gap between verse block and reference line, as fraction of canvas width
   stripeSidePaddingRatio: 0.04, // horizontal text margin inside the stripe, as fraction of canvas width - independent of vertical padding
+  // Wider than the general side padding above - real lock screens (at least
+  // iOS) apply extra zoom beyond a plain cover-fit crop for the parallax
+  // effect, cropping further into the sides than the aspect ratio alone
+  // would suggest. Confirmed on-device: the default 4% wasn't enough and
+  // text ran off the edge.
+  wallpaperSidePaddingRatio: 0.1,
   stripeVerticalPaddingRatio: 0.03, // top/bottom padding inside the stripe, as fraction of canvas width - independent of side padding
   defaultStripeOpacity: 0.77,
   defaultZoom: 1,
@@ -19,6 +25,10 @@ export const THEME = {
   maxTextScale: 1.6,
   // Default stripe position: bottom of the image, with a small margin.
   defaultStripeBottomRatio: 0.94,
+  // Phone wallpaper mode: keeps the stripe's bottom edge just above the
+  // reserved shortcuts/nav-bar zone (see WALLPAPER_SAFE_ZONE) instead of the
+  // near-bottom default above.
+  wallpaperSafeStripeBottomRatio: 0.68,
   // Photo credit watermark: tiny, translucent, bottom-center of the image.
   creditFontRatio: 0.016,
   creditBottomMarginRatio: 0.016,
@@ -32,6 +42,25 @@ export const ASPECT_RATIOS = {
   square: { label: "1:1", w: 1, h: 1 },
   landscape: { label: "4:3", w: 4, h: 3 },
   wide: { label: "16:9", w: 16, h: 9 },
+  // Taller than any current mainstream phone (modern iPhones/Androids top
+  // out around 19.5:9-21:9) so cover-fit is always width-constrained: full
+  // width shows with no horizontal crop, and any overflow crops top/bottom
+  // instead, which the reserved zones already guard against. On-device
+  // testing found the opposite (a squarer ratio needing width-crop) cut
+  // text off the sides. As a bonus, the same text occupies a smaller
+  // fraction of a taller frame, giving it more effective room relative to
+  // the fixed-percentage safe zones below.
+  wallpaper: { label: "Phone wallpaper", w: 9, h: 21 },
+};
+
+// Screen areas a lock-screen wallpaper needs to stay clear of - status bar,
+// clock, and lock-screen widgets at the top; shortcuts, an optional second
+// row of widgets, and the home indicator / gesture nav bar at the bottom.
+// Hand-measured against an actual iOS lock screen (see conversation) rather
+// than estimated - the real top zone runs much deeper than initially assumed.
+export const WALLPAPER_SAFE_ZONE = {
+  topRatio: 0.43,
+  bottomRatio: 0.29,
 };
 
 function wrapText(ctx, text, maxWidth) {
@@ -70,10 +99,12 @@ function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom,
 // Computes stripe + text geometry for canvasWidth x canvasHeight, without
 // drawing anything. Shared by renderCard (to draw) and main.js (to hit-test
 // drag gestures against the current stripe rectangle).
-export function computeLayout(ctx, canvasWidth, canvasHeight, { verseText, textScale, stripeBottomRatio }) {
+export function computeLayout(ctx, canvasWidth, canvasHeight, {
+  verseText, textScale, stripeBottomRatio, sidePaddingRatio = THEME.stripeSidePaddingRatio,
+}) {
   const versePx = canvasWidth * THEME.verseFontRatio * textScale;
   const refPx = versePx; // reference line matches the verse text size
-  const sidePadding = canvasWidth * THEME.stripeSidePaddingRatio;
+  const sidePadding = canvasWidth * sidePaddingRatio;
   // Top/bottom padding and the verse-to-reference gap scale with text size
   // too, so the stripe's whitespace stays proportional to the text it holds.
   const vPadding = canvasWidth * THEME.stripeVerticalPaddingRatio * textScale;
@@ -109,13 +140,14 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
   textTheme,
   textScale,
   stripeBottomRatio,
+  sidePaddingRatio,
   credit,
 }) {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
   drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw);
 
-  const layout = computeLayout(ctx, canvasWidth, canvasHeight, { verseText, textScale, stripeBottomRatio });
+  const layout = computeLayout(ctx, canvasWidth, canvasHeight, { verseText, textScale, stripeBottomRatio, sidePaddingRatio });
   const { versePx, refPx, vPadding, refGap, verseLines, verseLineHeight, verseBlockHeight, stripeY, stripeHeight } = layout;
 
   // "light" = black text on a white stripe (default); "dark" = inverted.

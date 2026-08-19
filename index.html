@@ -16,6 +16,10 @@
         <div class="canvas-stage">
           <canvas id="preview-canvas"></canvas>
           <div id="grid-overlay" class="grid-overlay" aria-hidden="true"></div>
+          <div id="wallpaper-safe-overlay" class="safe-zone-overlay" aria-hidden="true" hidden>
+            <div class="safe-zone-band safe-zone-top"><span>Clock / status bar</span></div>
+            <div class="safe-zone-band safe-zone-bottom"><span>Widgets / shortcuts / nav bar</span></div>
+          </div>
         </div>
         <p id="photo-credit" class="credit" hidden></p>
         <input id="upload-input" type="file" accept="image/*" hidden />
@@ -46,9 +50,13 @@
             <div id="text-theme-buttons" class="toggle-group"></div>
           </div>
 
+          <div class="control-divider"></div>
+
           <div class="control-row">
             <div id="aspect-buttons" class="toggle-group"></div>
           </div>
+
+          <div class="control-divider"></div>
 
           <div class="control-row">
             <div id="source-buttons" class="toggle-group"></div>
