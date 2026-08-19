@@ -50,6 +50,11 @@ body {
   padding: 16px;
   border-radius: 12px;
   transition: opacity 0.4s ease;
+  /* Capped and internally scrollable (rather than letting the whole page
+     grow taller than the viewport) so the preview never has to move to
+     keep the panel's later content reachable. */
+  max-height: 100vh;
+  overflow-y: auto;
 }
 
 /* Everything below the hide/show settings toggle - needs its own gap since
@@ -232,11 +237,6 @@ button:hover {
   min-width: 0;
 }
 
-.preview-wrap .hint {
-  text-align: center;
-  max-width: 640px;
-}
-
 .canvas-stage {
   position: relative;
   display: inline-block;
@@ -329,18 +329,25 @@ button:hover {
     display: block;
   }
 
+  /* Pinned to the viewport so scrolling the (possibly tall, overflowing)
+     panel never scrolls the preview out of view. */
   .preview-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
+    z-index: 0;
   }
 
   .side {
-    position: absolute;
+    position: fixed;
     top: 0;
     right: 0;
     background: var(--panel-overlay);
     border-radius: 12px 0 0 12px;
     padding: 4px;
     gap: 8px;
+    z-index: 1;
   }
 
   #panel-content {
