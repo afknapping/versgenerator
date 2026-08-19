@@ -117,6 +117,14 @@ function capitalizeFirst(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+// A verse pulled out of its paragraph sometimes ends mid-sentence - on a
+// comma, colon, semicolon, or (Schlachter) an em dash - which reads as a
+// dangling connector with nothing following it on the card. Sentence-enders
+// (., !, ?) and closing quotes/parens are left as-is.
+function stripDanglingPunctuation(text) {
+  return text.replace(/[,;:–]+$/, "");
+}
+
 // Resolves a parsed reference to its verse text for the given translation.
 // Concatenates a verse range with a single space. Returns null if any verse
 // in the range doesn't exist (e.g. chapter/verse out of bounds).
@@ -129,7 +137,7 @@ export async function getVerseText(translation, ref) {
     if (text == null) return null;
     parts.push(text);
   }
-  return capitalizeFirst(parts.join(" "));
+  return capitalizeFirst(stripDanglingPunctuation(parts.join(" ")));
 }
 
 export function formatReferenceLabel(ref, translation) {

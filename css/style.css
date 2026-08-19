@@ -4,7 +4,7 @@
   --panel-overlay: rgba(18, 18, 18, 0.88);
   --text: #eee;
   --muted: #999;
-  --accent: #4a90d9;
+  --accent: #707070; /* light enough to still read white text on top at AA contrast */
   color-scheme: dark;
 }
 
@@ -21,7 +21,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: system-ui, sans-serif;
+  font-family: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -131,6 +131,7 @@ button {
   background: #333;
   color: var(--text);
   font-size: 0.95rem;
+  font-weight: 300;
   cursor: pointer;
 }
 
@@ -168,6 +169,7 @@ button:hover {
 .toggle-group button[aria-pressed="true"] {
   background: var(--accent);
   color: #fff;
+  font-weight: 800;
 }
 
 .aspect-swatch {
@@ -267,6 +269,22 @@ button:hover {
   justify-content: center;
   gap: 6px;
   width: 100%;
+}
+
+.save-row button:not(.link-button) {
+  background: #000;
+  border-color: #fff;
+  color: #fff;
+  font-weight: 800;
+}
+
+.save-row button:not(.link-button):hover {
+  background: #1a1a1a;
+}
+
+#save-highres-btn {
+  color: #fff;
+  text-decoration: underline;
 }
 
 .save-row.save-col {

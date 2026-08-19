@@ -8,7 +8,7 @@ export const THEME = {
   verseLineHeightRatio: 1.3,
   refWeight: 300, // reference line font size matches the verse text (see refPx in computeLayout)
   refGapRatio: 0.03, // gap between verse block and reference line, as fraction of canvas width
-  stripeSidePaddingRatio: 0.09, // horizontal text margin inside the stripe, as fraction of canvas width - independent of vertical padding
+  stripeSidePaddingRatio: 0.04, // horizontal text margin inside the stripe, as fraction of canvas width - independent of vertical padding
   stripeVerticalPaddingRatio: 0.03, // top/bottom padding inside the stripe, as fraction of canvas width - independent of side padding
   defaultStripeOpacity: 0.77,
   defaultZoom: 1,
