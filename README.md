@@ -14,9 +14,7 @@ python3 serve.py 8080
 (Plain `python3 -m http.server` works too, but its caching makes edits
 appear stale during development - `serve.py` disables that.)
 
-Then open http://localhost:8080. On first load, paste a free
-[Unsplash Access Key](https://unsplash.com/developers) into the settings
-panel — it's stored only in this browser's `localStorage`, never committed.
+Then open http://localhost:8080.
 
 ## Data
 
@@ -25,3 +23,6 @@ panel — it's stored only in this browser's `localStorage`, never committed.
   For private use only (Schlachter 2000 text is copyrighted).
 - `data/kjv.json` — vendored from
   [farskipper/kjv](https://github.com/farskipper/kjv) (public domain).
+- `data/mountain/`, `data/water/` — local photo folders (no API, no key).
+  Each source's `manifest.json` lists its image files; run
+  `python3 build-manifests.py` after adding or removing photos.

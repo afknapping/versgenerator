@@ -14,7 +14,7 @@ export const THEME = {
   defaultZoom: 1,
   minZoom: 1,
   maxZoom: 3,
-  defaultTextScale: 1,
+  defaultTextScale: 0.67, // slider thumb at one third along its min-max track
   minTextScale: 0.2,
   maxTextScale: 1.6,
   // Default stripe position: bottom of the image, with a small margin.

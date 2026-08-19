@@ -1,11 +1,14 @@
 import { parseReference, getVerseText, formatReferenceLabel, formatFileName, getSchlachterLabel } from "./bible.js";
-import { getApiKey, setApiKey, nextPhoto, resetCycle } from "./unsplash.js";
+import { nextPhoto, peekNextPhoto } from "./photos.js";
 import { renderCard, ASPECT_RATIOS, THEME } from "./canvas.js";
 import { saveCard } from "./export.js";
 
 const PREVIEW_WIDTH = 640;
 const DEFAULT_REFERENCE = "Matthäus 17:27";
 const SETTINGS_KEY = "versgenerator.settings";
+// Shown to a brand-new visitor with no saved photo yet - after that, whatever
+// photo was last shown is persisted and restored as-is (see loadInitialPhoto).
+const DEFAULT_MOUNTAIN_PHOTO = "neil-rosenstech-OxnhDqLcjU4-unsplash.jpg";
 
 // Upload isn't working reliably yet - hidden from the UI (toggle option
 // removed, drop zone/file-picker listeners not attached) but the
@@ -32,16 +35,20 @@ const state = {
   image: null,
   focalPoint: saved.focalPoint ?? { x: 50, y: 50 },
   zoom: saved.zoom ?? THEME.defaultZoom,
-  bw: saved.bw ?? false,
+  bw: saved.bw ?? true,
   aspectKey: saved.aspectKey ?? "portrait",
   // "mountain" | "water" | "upload" - fall back to "mountain" if a
   // previous session persisted "upload" while it's disabled (see
   // UPLOAD_ENABLED above).
   imageSource: (!UPLOAD_ENABLED && saved.imageSource === "upload") ? "mountain" : (saved.imageSource ?? "mountain"),
-  textTheme: saved.textTheme ?? "light", // "light" = black text on white; "dark" = white text on black
+  textTheme: saved.textTheme ?? "dark", // "light" = black text on white; "dark" = white text on black
   textScale: saved.textScale ?? THEME.defaultTextScale,
   stripeBottomRatio: saved.stripeBottomRatio ?? THEME.defaultStripeBottomRatio,
   photoCreditText: "",
+  // The exact photo currently shown, persisted so a reload restores it
+  // as-is - only "Change picture" (or switching source) picks a new one.
+  photoUrl: saved.photoUrl ?? null,
+  photoCredit: saved.photoCredit ?? null,
 };
 
 function saveSettings() {
@@ -56,6 +63,8 @@ function saveSettings() {
     textScale: state.textScale,
     stripeBottomRatio: state.stripeBottomRatio,
     focalPoint: state.focalPoint,
+    photoUrl: state.photoUrl,
+    photoCredit: state.photoCredit,
   }));
 }
 
@@ -65,10 +74,6 @@ let lastLayout = null;
 const el = {
   panelToggle: document.getElementById("panel-toggle"),
   panelContent: document.getElementById("panel-content"),
-  settingsToggle: document.getElementById("settings-toggle"),
-  settingsPanel: document.getElementById("settings-panel"),
-  keyInput: document.getElementById("unsplash-key"),
-  saveKey: document.getElementById("save-key"),
   refInput: document.getElementById("reference-input"),
   translationSelect: document.getElementById("translation-select"),
   refError: document.getElementById("reference-error"),
@@ -163,34 +168,23 @@ function loadImage(url) {
   });
 }
 
-const FALLBACK_PHOTOS = {
-  mountain: {
-    url: "data/fallback-mountain.jpg",
-    credit: { name: "Artur Stanulevich", link: "https://unsplash.com/@stanulevich" },
-  },
-  water: {
-    url: "data/fallback-water.jpg",
-    credit: { name: "Gláuber Sampaio", link: "https://unsplash.com/@glaubersampaio" },
-  },
-};
-
-// `credit` is { name, link, withUtm } from Unsplash, or null for a locally
-// uploaded photo (no attribution to show). Builds both the DOM credit line
-// (with a real link) and the plain-text watermark drawn onto the canvas.
+// `credit` is { name, link } (link may be null - see photos.js) or null for
+// a locally uploaded photo (no attribution to show). Builds both the DOM
+// credit line and the plain-text watermark drawn onto the canvas.
 async function applyPhoto(image, credit, { resetFraming = true } = {}) {
   state.image = image;
   if (resetFraming) {
-    // A genuinely new photo has a different composition - start centered.
-    // (Reloading the same saved fallback photo keeps the saved framing.)
+    // A new photo has a different composition - start centered, full zoom.
     state.focalPoint = { x: 50, y: 50 };
     state.zoom = THEME.defaultZoom;
     el.zoomSlider.value = 100;
     saveSettings();
   }
   if (credit) {
-    const href = credit.withUtm ? `${credit.link}?utm_source=versgenerator&utm_medium=referral` : credit.link;
     el.photoCredit.hidden = false;
-    el.photoCredit.innerHTML = `Photo by <a href="${href}" target="_blank" rel="noopener">${credit.name}</a> on Unsplash`;
+    el.photoCredit.innerHTML = credit.link
+      ? `Photo by <a href="${credit.link}" target="_blank" rel="noopener">${credit.name}</a> on Unsplash`
+      : `Photo by ${credit.name} on Unsplash`;
     state.photoCreditText = `Photo: ${credit.name} — Unsplash`;
   } else {
     el.photoCredit.hidden = true;
@@ -200,37 +194,62 @@ async function applyPhoto(image, credit, { resetFraming = true } = {}) {
   render();
 }
 
-async function loadNextPhoto() {
-  if (!getApiKey()) {
-    showError(el.photoError, "Add your Unsplash API key above first.");
-    el.settingsPanel.hidden = false;
-    return;
-  }
+// The next photo for a source, already decoding, so "Change picture" has no
+// loading time - started right after the previous photo finishes applying.
+const prefetched = new Map(); // source -> { url, credit, imagePromise }
+
+function prefetchNext(source) {
+  peekNextPhoto(source).then((photo) => {
+    if (!photo) return;
+    const imagePromise = loadImage(photo.url);
+    imagePromise.catch(() => {}); // avoid an unhandled rejection if it's never consumed
+    prefetched.set(source, { url: photo.url, credit: photo.credit, imagePromise });
+  });
+}
+
+// Loads and applies a new random photo for the given source ("mountain" or
+// "water"), used on first-ever visit, "Change picture", and switching
+// sources. `preferFile`, if given, forces that specific file as the pick
+// (only meaningful for the very first photo of a fresh cycle - see
+// nextPhoto in photos.js).
+async function loadPhotoForSource(source, { preferFile } = {}) {
   el.changePicture.disabled = true;
   try {
-    const photo = await nextPhoto(state.imageSource);
-    const image = await loadImage(photo.url);
+    const photo = await nextPhoto(source, { preferFile });
+    const pre = prefetched.get(source);
+    const image = pre && pre.url === photo.url ? await pre.imagePromise : await loadImage(photo.url);
+    prefetched.delete(source);
     showError(el.photoError, "");
-    await applyPhoto(image, { ...photo.credit, withUtm: true });
+    state.photoUrl = photo.url;
+    state.photoCredit = photo.credit;
+    await applyPhoto(image, photo.credit);
+    prefetchNext(source);
   } catch (err) {
-    if (err.message === "missing-key") {
-      showError(el.photoError, "Add your Unsplash API key above first.");
-      el.settingsPanel.hidden = false;
-    } else if (err.message === "unauthorized") {
-      showError(el.photoError, "That Unsplash key was rejected (401). Update it above and save to try again.");
-      el.settingsPanel.hidden = false;
-    } else if (err.message === "no-results") {
-      showError(el.photoError, "No results found.");
-    } else if (err.message === "rate-limited") {
-      showError(el.photoError, "Unsplash API limit reached - using a local fallback photo.");
-      const fallback = FALLBACK_PHOTOS[state.imageSource] ?? FALLBACK_PHOTOS.mountain;
-      const image = await loadImage(fallback.url);
-      await applyPhoto(image, fallback.credit);
+    if (err.message === "no-results") {
+      showError(el.photoError, `No ${source} photos yet - add some to data/${source}/ and rerun build-manifests.py.`);
     } else {
-      showError(el.photoError, "Couldn't load a photo. Check your API key and try again.");
+      showError(el.photoError, "Couldn't load that photo.");
     }
   } finally {
     el.changePicture.disabled = false;
+  }
+}
+
+function loadNextPhoto() {
+  return loadPhotoForSource(state.imageSource);
+}
+
+// Reloading the page should show whatever photo was left on, not a new
+// random one - restores it as-is (framing included) and falls back to
+// picking a fresh photo only if it no longer loads (e.g. file was removed).
+async function restorePhoto(source, url, credit) {
+  try {
+    const image = await loadImage(url);
+    showError(el.photoError, "");
+    await applyPhoto(image, credit, { resetFraming: false });
+    prefetchNext(source);
+  } catch {
+    loadPhotoForSource(source);
   }
 }
 
@@ -360,21 +379,17 @@ function updateChangePictureVisibility() {
 }
 
 // Switches the active image source and syncs the toggle UI to match.
-// `loadFallback: false` is used right before loading a just-dropped file,
-// so we don't fetch-then-immediately-discard the "upload" fallback (there
+// `loadPhoto: false` is used right before loading a just-dropped file, so
+// we don't fetch-then-immediately-discard a random "upload" photo (there
 // isn't one).
-function selectSource(key, { loadFallback = true } = {}) {
+function selectSource(key, { loadPhoto = true } = {}) {
   state.imageSource = key;
   for (const b of el.sourceButtons.children) {
     b.setAttribute("aria-pressed", b.dataset.key === key ? "true" : "false");
   }
   updateChangePictureVisibility();
   saveSettings();
-  if (loadFallback && key !== "upload") {
-    showError(el.photoError, "");
-    const fallback = FALLBACK_PHOTOS[key];
-    loadImage(fallback.url).then((image) => applyPhoto(image, fallback.credit));
-  }
+  if (loadPhoto && key !== "upload") loadPhotoForSource(key);
 }
 
 function buildSourceButtons() {
@@ -484,7 +499,7 @@ function wireDrag() {
 // fetch needed, we already have the image) and shows no attribution.
 async function handleUploadedFile(file) {
   if (!file || !file.type.startsWith("image/")) return;
-  selectSource("upload", { loadFallback: false });
+  selectSource("upload", { loadPhoto: false });
   const url = URL.createObjectURL(file);
   try {
     const image = await loadImage(url);
@@ -538,16 +553,6 @@ function wireEvents() {
     el.panelToggle.textContent = el.panelContent.hidden ? "Show settings" : "Hide settings";
   });
 
-  el.settingsToggle.addEventListener("click", () => {
-    el.settingsPanel.hidden = !el.settingsPanel.hidden;
-  });
-  el.keyInput.value = getApiKey();
-  el.saveKey.addEventListener("click", () => {
-    setApiKey(el.keyInput.value);
-    resetCycle();
-    el.settingsPanel.hidden = true;
-  });
-
   el.refInput.addEventListener("change", () => {
     updateVerse();
     saveSettings();
@@ -585,14 +590,12 @@ function wireEvents() {
   el.save4kBtn.addEventListener("click", () => doSave("4k"));
 }
 
-async function loadInitialPhoto() {
-  // Starts from the current source's local fallback rather than calling the
-  // Unsplash API on every reload; "Change picture" is what fetches from
-  // Unsplash. "upload" has nothing to restore - wait for a dropped file.
+function loadInitialPhoto() {
+  // "upload" has nothing to restore - wait for a dropped file.
   if (state.imageSource === "upload") return;
-  const fallback = FALLBACK_PHOTOS[state.imageSource] ?? FALLBACK_PHOTOS.mountain;
-  const image = await loadImage(fallback.url);
-  await applyPhoto(image, fallback.credit, { resetFraming: false });
+  if (state.photoUrl) return restorePhoto(state.imageSource, state.photoUrl, state.photoCredit);
+  const preferFile = state.imageSource === "mountain" ? DEFAULT_MOUNTAIN_PHOTO : undefined;
+  return loadPhotoForSource(state.imageSource, { preferFile });
 }
 
 // Canvas text doesn't wait for webfonts the way DOM text does - drawing
@@ -626,7 +629,6 @@ async function init() {
   wireDrag();
   if (UPLOAD_ENABLED) wireUpload();
   wireEvents();
-  if (!getApiKey()) el.settingsPanel.hidden = false;
   el.refInput.value = saved.reference ?? DEFAULT_REFERENCE;
   updateVerse();
   await ensureFontsLoaded();
