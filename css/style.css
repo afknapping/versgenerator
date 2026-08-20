@@ -53,8 +53,13 @@ body {
   transition: opacity 0.4s ease;
   /* Capped and internally scrollable (rather than letting the whole page
      grow taller than the viewport) so the preview never has to move to
-     keep the panel's later content reachable. */
+     keep the panel's later content reachable. dvh (not vh) matters on iOS
+     Safari specifically: vh is pinned to the viewport with the address/tab
+     bar collapsed, so while it's showing the panel's box is taller than
+     what's actually visible and scrolling can't reach the last bit of
+     content - dvh tracks the real, current visible height instead. */
   max-height: 100vh;
+  max-height: 100dvh;
   overflow-y: auto;
 }
 
@@ -218,6 +223,7 @@ button:hover {
   display: inline-block;
   max-width: 100%;
   max-height: 100vh;
+  max-height: 100dvh;
 }
 
 #preview-canvas {
@@ -227,6 +233,7 @@ button:hover {
   display: block;
   max-width: 100%;
   max-height: 100vh;
+  max-height: 100dvh;
   width: auto;
   height: auto;
   border-radius: 4px;
