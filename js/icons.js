@@ -94,6 +94,23 @@ export function renderPlusIcon(size = 16) {
   return svg;
 }
 
+export function renderZoomOutIcon(size = 16) {
+  const svg = iconSvg("icon-zoom-out", size);
+  svg.appendChild(svgEl("circle", { cx: "10", cy: "10", r: "7" }));
+  svg.appendChild(svgEl("line", { x1: "21", y1: "21", x2: "15.4", y2: "15.4" }));
+  svg.appendChild(svgEl("line", { x1: "7", y1: "10", x2: "13", y2: "10" }));
+  return svg;
+}
+
+export function renderZoomInIcon(size = 16) {
+  const svg = iconSvg("icon-zoom-in", size);
+  svg.appendChild(svgEl("circle", { cx: "10", cy: "10", r: "7" }));
+  svg.appendChild(svgEl("line", { x1: "21", y1: "21", x2: "15.4", y2: "15.4" }));
+  svg.appendChild(svgEl("line", { x1: "7", y1: "10", x2: "13", y2: "10" }));
+  svg.appendChild(svgEl("line", { x1: "10", y1: "7", x2: "10", y2: "13" }));
+  return svg;
+}
+
 export function renderChevronDownIcon(size = 14) {
   const svg = iconSvg("icon-chevron-down", size);
   svg.appendChild(svgEl("polyline", { points: "6 9 12 15 18 9" }));

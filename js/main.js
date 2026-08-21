@@ -4,7 +4,7 @@ import { renderCard, ASPECT_RATIOS, THEME, WALLPAPER_SAFE_ZONE, FONT_STACKS } fr
 import {
   renderPhoneIcon, renderReloadIcon, renderMountainIcon, renderWaterDropIcon,
   renderColorWheelIcon, renderHalfCircleIcon, renderMinusIcon, renderPlusIcon,
-  renderChevronDownIcon, renderDownloadIcon,
+  renderZoomOutIcon, renderZoomInIcon, renderChevronDownIcon, renderDownloadIcon,
 } from "./icons.js";
 import { saveCard } from "./export.js";
 
@@ -40,14 +40,13 @@ const state = {
   image: null,
   focalPoint: saved.focalPoint ?? { x: 50, y: 50 },
   zoom: saved.zoom ?? THEME.defaultZoom,
-  bw: saved.bw ?? true,
-  vignette: saved.vignette ?? true,
+  bw: saved.bw ?? false,
   aspectKey: saved.aspectKey ?? "portrait",
   // "mountain" | "water" | "upload" - fall back to "mountain" if a
   // previous session persisted "upload" while it's disabled (see
   // UPLOAD_ENABLED above).
   imageSource: (!UPLOAD_ENABLED && saved.imageSource === "upload") ? "mountain" : (saved.imageSource ?? "mountain"),
-  textTheme: saved.textTheme ?? "dark", // "light" = black text on white; "dark" = white text on black
+  textTheme: saved.textTheme ?? "light", // "light" = black text on white; "dark" = white text on black
   fontStyle: saved.fontStyle ?? "modern", // "modern" | "classic" - see FONT_STACKS
   textScale: saved.textScale ?? THEME.defaultTextScale,
   stripeBottomRatio: saved.stripeBottomRatio ?? THEME.defaultStripeBottomRatio,
@@ -64,7 +63,6 @@ function saveSettings() {
     translation: state.translation,
     aspectKey: state.aspectKey,
     bw: state.bw,
-    vignette: state.vignette,
     imageSource: state.imageSource,
     textTheme: state.textTheme,
     fontStyle: state.fontStyle,
@@ -87,7 +85,6 @@ const el = {
   translationSelect: document.getElementById("translation-select"),
   refError: document.getElementById("reference-error"),
   filterButtons: document.getElementById("filter-buttons"),
-  vignetteButtons: document.getElementById("vignette-buttons"),
   sourceButtons: document.getElementById("source-buttons"),
   uploadInput: document.getElementById("upload-input"),
   aspectButtons: document.getElementById("aspect-buttons"),
@@ -112,8 +109,12 @@ const el = {
   mobileRefInput: document.getElementById("mobile-reference-input"),
   mobileTranslationSelect: document.getElementById("mobile-translation-select"),
   mobileAspectSelect: document.getElementById("mobile-aspect-select"),
-  mobileRow2: document.getElementById("mobile-row-2"),
-  mobileRow3: document.getElementById("mobile-row-3"),
+  mobileFontGroup: document.getElementById("mobile-font-group"),
+  mobileThemeGroup: document.getElementById("mobile-theme-group"),
+  mobileTextsizeGroup: document.getElementById("mobile-textsize-group"),
+  mobileSourceGroup: document.getElementById("mobile-source-group"),
+  mobileFilterGroup: document.getElementById("mobile-filter-group"),
+  mobileZoomGroup: document.getElementById("mobile-zoom-group"),
   mobileSave: document.getElementById("mobile-save"),
   mobileSaveBtn: document.getElementById("mobile-save-btn"),
   mobileSaveLabel: document.getElementById("mobile-save-label"),
@@ -125,24 +126,15 @@ const ctx = el.canvas.getContext("2d");
 
 // Rule-of-thirds grid, shown while zooming/resizing text/dragging, fading
 // out 1.5s after the interaction stops. Purely a DOM overlay - never drawn
-// into the canvas, so it can never leak into an exported image. The control
-// panel also goes very transparent while it's up, so it doesn't block the
-// framing you're actively adjusting (mainly matters in overlay mode, where
-// the panel sits on top of the photo).
+// into the canvas, so it can never leak into an exported image.
 const GRID_FADE_DELAY = 700;
 let gridFadeTimer = null;
 function showGrid() {
   el.gridOverlay.classList.add("visible");
-  el.side.classList.add("dimmed");
-  el.mobileToolbar.classList.add("dimmed");
-  el.mobileSave.classList.add("dimmed");
   if (state.aspectKey === "wallpaper") el.wallpaperSafeOverlay.classList.add("visible");
   clearTimeout(gridFadeTimer);
   gridFadeTimer = setTimeout(() => {
     el.gridOverlay.classList.remove("visible");
-    el.side.classList.remove("dimmed");
-    el.mobileToolbar.classList.remove("dimmed");
-    el.mobileSave.classList.remove("dimmed");
     el.wallpaperSafeOverlay.classList.remove("visible");
   }, GRID_FADE_DELAY);
 }
@@ -191,7 +183,6 @@ function cardParams() {
     focalPoint: state.focalPoint,
     zoom: state.zoom,
     bw: state.bw,
-    vignette: state.vignette,
     verseText: state.verseText,
     refLabel: state.refLabel,
     stripeOpacity: THEME.defaultStripeOpacity,
@@ -474,21 +465,6 @@ function buildFilterButtons() {
   buildToggleGroup(el.filterButtons, options, state.bw ? "bw" : "color", (key) => setFilter(key === "bw"));
 }
 
-function setVignette(on) {
-  state.vignette = on;
-  render();
-  saveSettings();
-  buildVignetteButtons();
-}
-
-function buildVignetteButtons() {
-  const options = [
-    { key: "on", label: "Vignette on" },
-    { key: "off", label: "Vignette off" },
-  ];
-  buildToggleGroup(el.vignetteButtons, options, state.vignette ? "on" : "off", (key) => setVignette(key === "on"));
-}
-
 // Switches the active image source and syncs the toggle UI to match.
 // `loadPhoto: false` is used right before loading a just-dropped file, so
 // we don't fetch-then-immediately-discard a random "upload" photo (there
@@ -607,63 +583,111 @@ function buildMobileIconGroup(options, selectedKey, onSelect) {
 // A -/+ pair with no "selected" state - each tap just nudges a value by a
 // fixed step (see ZOOM_STEP/TEXT_SIZE_STEP), replacing the desktop sliders'
 // continuous drag with something that fits a 30px-tall icon row.
-function buildMobileStepper({ decLabel, incLabel, onDecrement, onIncrement }) {
+function buildMobileStepper({
+  decLabel, incLabel, onDecrement, onIncrement,
+  renderDecIcon = renderMinusIcon, renderIncIcon = renderPlusIcon,
+}) {
   const group = document.createElement("div");
   group.className = "mobile-icon-group";
   const dec = document.createElement("button");
   dec.type = "button";
   dec.setAttribute("aria-label", decLabel);
-  dec.appendChild(renderMinusIcon());
+  dec.appendChild(renderDecIcon());
   dec.addEventListener("click", onDecrement);
   const inc = document.createElement("button");
   inc.type = "button";
   inc.setAttribute("aria-label", incLabel);
-  inc.appendChild(renderPlusIcon());
+  inc.appendChild(renderIncIcon());
   inc.addEventListener("click", onIncrement);
   group.appendChild(dec);
   group.appendChild(inc);
   return group;
 }
 
-// Row 2: source, filter, zoom.
+// Text-size buttons preview the effect directly - a big "A" with a small
+// -/+ mark, light weight for smaller and bold for bigger - rather than
+// generic minus/plus icons like the zoom stepper.
+function buildTextSizeGlyphButton(symbol, weight, ariaLabel, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.setAttribute("aria-label", ariaLabel);
+  const span = document.createElement("span");
+  span.className = "mobile-textsize-glyph";
+  span.style.fontWeight = String(weight);
+  const a = document.createElement("span");
+  a.className = "mobile-textsize-glyph-a";
+  a.textContent = "A";
+  const sym = document.createElement("span");
+  sym.className = "mobile-textsize-glyph-symbol";
+  sym.textContent = symbol;
+  span.appendChild(a);
+  span.appendChild(sym);
+  button.appendChild(span);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function buildTextSizeStepper() {
+  const group = document.createElement("div");
+  group.className = "mobile-icon-group";
+  group.appendChild(buildTextSizeGlyphButton("-", 300, "Smaller text", () => (
+    setTextScale(Math.round(state.textScale * 100) - TEXT_SIZE_STEP, { showThirds: false })
+  )));
+  group.appendChild(buildTextSizeGlyphButton("+", 800, "Bigger text", () => (
+    setTextScale(Math.round(state.textScale * 100) + TEXT_SIZE_STEP, { showThirds: false })
+  )));
+  return group;
+}
+
+// Row 2 of the grid: aspect select (static), then source/filter/zoom -
+// each in its own grid cell so it lines up under row 1's matching column.
 function buildMobileRow2() {
-  el.mobileRow2.innerHTML = "";
-  el.mobileRow2.appendChild(buildMobileIconGroup([
+  el.mobileSourceGroup.innerHTML = "";
+  el.mobileSourceGroup.appendChild(buildMobileIconGroup([
     { key: "mountain", ariaLabel: "Mountain photos (tap again to change picture)", renderIcon: () => renderMountainIcon() },
     { key: "water", ariaLabel: "Water photos (tap again to change picture)", renderIcon: () => renderWaterDropIcon() },
   ], state.imageSource, selectSource));
-  el.mobileRow2.appendChild(buildMobileIconGroup([
+
+  el.mobileFilterGroup.innerHTML = "";
+  el.mobileFilterGroup.appendChild(buildMobileIconGroup([
     { key: "color", ariaLabel: "Original", renderIcon: () => renderColorWheelIcon() },
     { key: "bw", ariaLabel: "Silvertone", renderIcon: () => renderHalfCircleIcon() },
   ], state.bw ? "bw" : "color", (key) => setFilter(key === "bw")));
-  el.mobileRow2.appendChild(buildMobileStepper({
+
+  el.mobileZoomGroup.innerHTML = "";
+  el.mobileZoomGroup.appendChild(buildMobileStepper({
     decLabel: "Zoom out",
     incLabel: "Zoom in",
     onDecrement: () => setZoom(Math.round(state.zoom * 100) - ZOOM_STEP, { showThirds: false }),
     onIncrement: () => setZoom(Math.round(state.zoom * 100) + ZOOM_STEP, { showThirds: false }),
+    renderDecIcon: () => renderZoomOutIcon(22),
+    renderIncIcon: () => renderZoomInIcon(22),
   }));
 }
 
-// Row 3: font, text theme, text size.
+// Row 1 of the grid: reference input (static), then font/theme/text-size -
+// each in its own grid cell so it lines up above row 2's matching column.
 function buildMobileRow3() {
-  el.mobileRow3.innerHTML = "";
-  el.mobileRow3.appendChild(buildMobileIconGroup(
+  el.mobileFontGroup.innerHTML = "";
+  el.mobileFontGroup.appendChild(buildMobileIconGroup(
     Object.entries(FONT_STACKS).map(([key, font]) => ({
       key,
       ariaLabel: `${font.label} font`,
       renderIcon: () => {
         const span = document.createElement("span");
-        span.textContent = "Aa";
+        span.textContent = "A";
         span.style.fontFamily = font.fontFamily;
         span.style.fontWeight = "800";
-        span.style.fontSize = "0.75rem";
+        span.style.fontSize = "1.2rem";
         return span;
       },
     })),
     state.fontStyle,
     setFontStyle,
   ));
-  el.mobileRow3.appendChild(buildMobileIconGroup([
+
+  el.mobileThemeGroup.innerHTML = "";
+  el.mobileThemeGroup.appendChild(buildMobileIconGroup([
     {
       key: "light",
       ariaLabel: "Black on white text",
@@ -685,12 +709,9 @@ function buildMobileRow3() {
       },
     },
   ], state.textTheme, setTextTheme));
-  el.mobileRow3.appendChild(buildMobileStepper({
-    decLabel: "Smaller text",
-    incLabel: "Bigger text",
-    onDecrement: () => setTextScale(Math.round(state.textScale * 100) - TEXT_SIZE_STEP, { showThirds: false }),
-    onIncrement: () => setTextScale(Math.round(state.textScale * 100) + TEXT_SIZE_STEP, { showThirds: false }),
-  }));
+
+  el.mobileTextsizeGroup.innerHTML = "";
+  el.mobileTextsizeGroup.appendChild(buildTextSizeStepper());
 }
 
 // Unicode glyphs standing in for the desktop's proportion swatches - a
@@ -988,7 +1009,6 @@ async function init() {
   buildAspectButtons();
   buildMobileAspectSelect();
   buildFilterButtons();
-  buildVignetteButtons();
   buildSourceButtons();
   buildTextThemeButtons();
   buildFontButtons();

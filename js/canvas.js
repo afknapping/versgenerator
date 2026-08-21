@@ -32,11 +32,6 @@ export const THEME = {
   creditFontRatio: 0.016,
   creditBottomMarginRatio: 0.016,
   creditOpacity: 0.55,
-  // Vignette matching iOS Photos' own vignette effect at its max (100)
-  // strength: darkening starts a bit past a third of the way out from
-  // center and reaches this alpha of black exactly at the corners.
-  vignetteInnerRadiusRatio: 0.35,
-  vignetteMaxAlpha: 0.75,
 };
 
 // Silvertone's grayscale/contrast/brightness look, expressed as constants
@@ -99,23 +94,6 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
-// Darkens toward the corners - radius reaches exactly to the farthest
-// corner from center, so the effect is always anchored to the frame itself
-// regardless of the photo's own pan/zoom.
-function drawVignette(ctx, canvasWidth, canvasHeight) {
-  const cx = canvasWidth / 2;
-  const cy = canvasHeight / 2;
-  const outerRadius = Math.hypot(cx, cy);
-  const gradient = ctx.createRadialGradient(
-    cx, cy, outerRadius * THEME.vignetteInnerRadiusRatio,
-    cx, cy, outerRadius
-  );
-  gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
-  gradient.addColorStop(1, `rgba(0, 0, 0, ${THEME.vignetteMaxAlpha})`);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-}
-
 // Grayscale (standard luminance weights) + contrast + brightness, applied
 // per-pixel in that order - the same order browsers apply chained CSS
 // filters in, so this matches what ctx.filter would have produced where it
@@ -135,7 +113,7 @@ function applySilvertone(ctx, canvasWidth, canvasHeight) {
 // Draws the source image into ctx, cover-cropped to canvasWidth x
 // canvasHeight. `focalPoint` is {x, y} in 0-100. `zoom` >= 1 scales the image
 // up beyond the minimum cover-fit, giving the focal point room to pan.
-function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw, vignette) {
+function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw) {
   const coverScale = Math.max(canvasWidth / image.naturalWidth, canvasHeight / image.naturalHeight);
   const scale = coverScale * zoom;
   const drawWidth = image.naturalWidth * scale;
@@ -145,7 +123,6 @@ function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom,
 
   ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
   if (bw) applySilvertone(ctx, canvasWidth, canvasHeight);
-  if (vignette) drawVignette(ctx, canvasWidth, canvasHeight);
 }
 
 // Computes stripe + text geometry for canvasWidth x canvasHeight, without
@@ -187,7 +164,6 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
   focalPoint,
   zoom,
   bw,
-  vignette = true,
   verseText,
   refLabel,
   stripeOpacity,
@@ -200,7 +176,7 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
 }) {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-  drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw, vignette);
+  drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw);
 
   const layout = computeLayout(ctx, canvasWidth, canvasHeight, { verseText, textScale, stripeBottomRatio, sidePaddingRatio, fontFamily });
   const { versePx, refPx, vPadding, refGap, verseLines, verseLineHeight, verseBlockHeight, stripeY, stripeHeight } = layout;

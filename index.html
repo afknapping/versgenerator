@@ -18,7 +18,7 @@
            it). Built mostly by main.js; the static markup here is just the
            row/group scaffolding. -->
       <div id="mobile-toolbar" class="mobile-toolbar">
-        <div class="mobile-row">
+        <div class="mobile-grid">
           <div class="mobile-ref-group">
             <input id="mobile-reference-input" type="text" placeholder="e.g. John 3:16 or Psalm 23:1-6" aria-label="Verse reference" />
             <select id="mobile-translation-select" class="mobile-inline-select" aria-label="Translation">
@@ -26,10 +26,17 @@
               <option value="kjv">KJV</option>
             </select>
           </div>
+          <div id="mobile-font-group"></div>
+          <div id="mobile-theme-group"></div>
+          <div id="mobile-textsize-group"></div>
+
+          <div class="mobile-toolbar-divider"></div>
+
           <select id="mobile-aspect-select" class="mobile-aspect-select" aria-label="Aspect ratio"></select>
+          <div id="mobile-source-group"></div>
+          <div id="mobile-filter-group"></div>
+          <div id="mobile-zoom-group"></div>
         </div>
-        <div id="mobile-row-2" class="mobile-row mobile-icon-row"></div>
-        <div id="mobile-row-3" class="mobile-row mobile-icon-row"></div>
       </div>
 
       <section class="preview-wrap">
@@ -103,10 +110,6 @@
 
           <div class="control-row">
             <div id="filter-buttons" class="toggle-group"></div>
-          </div>
-
-          <div class="control-row">
-            <div id="vignette-buttons" class="toggle-group"></div>
           </div>
         </section>
 
