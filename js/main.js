@@ -135,12 +135,14 @@ function showGrid() {
   el.gridOverlay.classList.add("visible");
   el.side.classList.add("dimmed");
   el.mobileToolbar.classList.add("dimmed");
+  el.mobileSave.classList.add("dimmed");
   if (state.aspectKey === "wallpaper") el.wallpaperSafeOverlay.classList.add("visible");
   clearTimeout(gridFadeTimer);
   gridFadeTimer = setTimeout(() => {
     el.gridOverlay.classList.remove("visible");
     el.side.classList.remove("dimmed");
     el.mobileToolbar.classList.remove("dimmed");
+    el.mobileSave.classList.remove("dimmed");
     el.wallpaperSafeOverlay.classList.remove("visible");
   }, GRID_FADE_DELAY);
 }
