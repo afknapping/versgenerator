@@ -455,7 +455,7 @@ button:hover {
 
   .mobile-row {
     display: flex;
-    gap: 4px;
+    gap: 12px;
   }
 
   .mobile-ref-group {
@@ -471,7 +471,7 @@ button:hover {
   #mobile-reference-input {
     flex: 1;
     min-width: 0;
-    height: 30px;
+    height: 48px;
     border: none;
     background: transparent;
     color: var(--text);
@@ -479,14 +479,10 @@ button:hover {
     font-size: 0.85rem;
   }
 
-  /* Shows only the dropdown chevron - the current translation intentionally
-     isn't visible here to stay compact; the full labeled list still appears
-     in the native picker sheet on tap. */
   /* A native select's own dropdown arrow doesn't render reliably at these
-     sizes on iOS Safari (particularly the 26px-wide translation select
-     below - not enough room for WebKit's own chevron), so both draw their
-     own instead via appearance:none + a background-image chevron, rather
-     than depending on the platform's control decoration at all. */
+     sizes on iOS Safari/some engines, so both draw their own instead via
+     appearance:none + a background-image chevron, rather than depending on
+     the platform's control decoration at all. */
   .mobile-inline-select,
   .mobile-aspect-select {
     appearance: none;
@@ -498,29 +494,28 @@ button:hover {
   }
 
   .mobile-inline-select {
-    width: 26px;
     flex-shrink: 0;
-    height: 30px;
-    padding: 0;
+    width: auto;
+    height: 48px;
+    padding: 0 22px 0 8px;
     border: none;
     border-left: 1px solid #444;
     background-color: transparent;
-    background-position: center;
-    color: transparent;
-    text-align: center;
+    color: var(--text);
+    font-size: 0.8rem;
+    text-align: left;
   }
 
   .mobile-aspect-select {
     flex-shrink: 0;
     width: auto;
-    height: 30px;
+    height: 48px;
     padding: 0 22px 0 6px;
     font-size: 0.8rem;
   }
 
   .mobile-icon-row {
     justify-content: flex-end;
-    gap: 12px;
   }
 
   .mobile-icon-group {
@@ -534,8 +529,8 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 48px;
+    height: 48px;
     padding: 0;
     border: none;
     border-radius: 0;
@@ -586,7 +581,7 @@ button:hover {
     display: flex;
     align-items: center;
     gap: 6px;
-    height: 40px;
+    height: 48px;
     padding: 0 16px;
     background: #000;
     border: 1px solid #fff;
@@ -600,8 +595,8 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 40px;
+    width: 40px;
+    height: 48px;
     padding: 0;
     background: #000;
     border: 1px solid #fff;
@@ -622,7 +617,7 @@ button:hover {
 
   .mobile-save-menu {
     position: absolute;
-    bottom: 48px;
+    bottom: 56px;
     left: 50%;
     transform: translateX(-50%);
     width: max-content;
@@ -640,7 +635,7 @@ button:hover {
   }
 
   .mobile-save-menu button {
-    height: 36px;
+    height: 48px;
     padding: 0 14px;
     border: none;
     border-radius: 0;

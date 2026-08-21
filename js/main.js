@@ -435,7 +435,7 @@ function selectAspect(key) {
   const oldUsable = (oldRatio.h / oldRatio.w) * usableHeightFraction(state.aspectKey);
   const newUsable = (newRatio.h / newRatio.w) * usableHeightFraction(key);
   const heightFactor = newUsable / oldUsable;
-  setTextScale(Math.round(state.textScale * heightFactor * 100));
+  setTextScale(Math.round(state.textScale * heightFactor * 100), { showThirds: false });
 
   state.aspectKey = key;
   // Keeps the stripe clear of the reserved bottom zone by default - still
@@ -557,20 +557,20 @@ function buildFontButtons() {
   });
 }
 
-function setZoom(percent) {
+function setZoom(percent, { showThirds = true } = {}) {
   const clamped = Math.min(THEME.maxZoom * 100, Math.max(THEME.minZoom * 100, percent));
   state.zoom = clamped / 100;
   el.zoomSlider.value = clamped;
-  showGrid();
+  if (showThirds) showGrid();
   render();
   saveSettings();
 }
 
-function setTextScale(percent) {
+function setTextScale(percent, { showThirds = true } = {}) {
   const clamped = Math.min(THEME.maxTextScale * 100, Math.max(THEME.minTextScale * 100, percent));
   state.textScale = clamped / 100;
   el.textSizeSlider.value = clamped;
-  showGrid();
+  if (showThirds) showGrid();
   render();
   saveSettings();
 }
@@ -637,8 +637,8 @@ function buildMobileRow2() {
   el.mobileRow2.appendChild(buildMobileStepper({
     decLabel: "Zoom out",
     incLabel: "Zoom in",
-    onDecrement: () => setZoom(Math.round(state.zoom * 100) - ZOOM_STEP),
-    onIncrement: () => setZoom(Math.round(state.zoom * 100) + ZOOM_STEP),
+    onDecrement: () => setZoom(Math.round(state.zoom * 100) - ZOOM_STEP, { showThirds: false }),
+    onIncrement: () => setZoom(Math.round(state.zoom * 100) + ZOOM_STEP, { showThirds: false }),
   }));
 }
 
@@ -686,8 +686,8 @@ function buildMobileRow3() {
   el.mobileRow3.appendChild(buildMobileStepper({
     decLabel: "Smaller text",
     incLabel: "Bigger text",
-    onDecrement: () => setTextScale(Math.round(state.textScale * 100) - TEXT_SIZE_STEP),
-    onIncrement: () => setTextScale(Math.round(state.textScale * 100) + TEXT_SIZE_STEP),
+    onDecrement: () => setTextScale(Math.round(state.textScale * 100) - TEXT_SIZE_STEP, { showThirds: false }),
+    onIncrement: () => setTextScale(Math.round(state.textScale * 100) + TEXT_SIZE_STEP, { showThirds: false }),
   }));
 }
 
