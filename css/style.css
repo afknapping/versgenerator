@@ -237,7 +237,12 @@ button:hover {
   width: auto;
   height: auto;
   border-radius: 4px;
-  touch-action: none;
+  /* Blocks native single/two-finger panning so our own pointer-based drag
+     (image pan, stripe drag) gets the gesture instead - but explicitly
+     still permits pinch-zoom, unlike touch-action:none. The canvas covers
+     most of the screen on mobile, so blocking pinch-zoom here left no way
+     to zoom back out of an accidental page zoom. */
+  touch-action: pinch-zoom;
   cursor: grab;
   background: #111;
 }

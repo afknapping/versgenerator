@@ -39,7 +39,13 @@ export const THEME = {
   vignetteMaxAlpha: 0.75,
 };
 
-export const SILVERTONE_FILTER = "grayscale(1) contrast(1.15) brightness(1.08)";
+// Silvertone's grayscale/contrast/brightness look, expressed as constants
+// for the manual pixel transform below rather than a CSS filter string -
+// canvas ctx.filter support is inconsistent enough across WebKit versions
+// (confirmed broken on-device on iOS) that it isn't a safe way to apply
+// this, even though it would otherwise be the simpler approach.
+const SILVERTONE_CONTRAST = 1.15;
+const SILVERTONE_BRIGHTNESS = 1.08;
 
 // "Modern" is the app's original sans-serif; "classic" is the earmarked
 // serif alternative for a more traditional look. Both need the same weight
@@ -110,6 +116,22 @@ function drawVignette(ctx, canvasWidth, canvasHeight) {
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 }
 
+// Grayscale (standard luminance weights) + contrast + brightness, applied
+// per-pixel in that order - the same order browsers apply chained CSS
+// filters in, so this matches what ctx.filter would have produced where it
+// actually works.
+function applySilvertone(ctx, canvasWidth, canvasHeight) {
+  const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    const contrasted = (gray - 128) * SILVERTONE_CONTRAST + 128;
+    const value = Math.max(0, Math.min(255, contrasted * SILVERTONE_BRIGHTNESS));
+    data[i] = data[i + 1] = data[i + 2] = value;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
 // Draws the source image into ctx, cover-cropped to canvasWidth x
 // canvasHeight. `focalPoint` is {x, y} in 0-100. `zoom` >= 1 scales the image
 // up beyond the minimum cover-fit, giving the focal point room to pan.
@@ -121,9 +143,8 @@ function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom,
   const offsetX = (canvasWidth - drawWidth) * (focalPoint.x / 100);
   const offsetY = (canvasHeight - drawHeight) * (focalPoint.y / 100);
 
-  ctx.filter = bw ? SILVERTONE_FILTER : "none";
   ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
-  ctx.filter = "none";
+  if (bw) applySilvertone(ctx, canvasWidth, canvasHeight);
   if (vignette) drawVignette(ctx, canvasWidth, canvasHeight);
 }
 
