@@ -7,6 +7,7 @@
 export const BOOKS = [
   {
     id: "GEN",
+    deShort: "1 Mo",
     kjv: "Genesis",
     de: "1 Mose",
     schlachter: "Das erste Buch Mose (Genesis)",
@@ -14,6 +15,7 @@ export const BOOKS = [
   },
   {
     id: "EXO",
+    deShort: "2 Mo",
     kjv: "Exodus",
     de: "2 Mose",
     schlachter: "Das zweite Buch Mose (Exodus)",
@@ -21,6 +23,7 @@ export const BOOKS = [
   },
   {
     id: "LEV",
+    deShort: "3 Mo",
     kjv: "Leviticus",
     de: "3 Mose",
     schlachter: "Das dritte Buch Mose (Leviticus)",
@@ -28,6 +31,7 @@ export const BOOKS = [
   },
   {
     id: "NUM",
+    deShort: "4 Mo",
     kjv: "Numbers",
     de: "4 Mose",
     schlachter: "Das vierte Buch Mose (Numeri)",
@@ -35,6 +39,7 @@ export const BOOKS = [
   },
   {
     id: "DEU",
+    deShort: "5 Mo",
     kjv: "Deuteronomy",
     de: "5 Mose",
     schlachter: "Das fünfte Buch Mose (Deuteronomium)",
@@ -42,6 +47,7 @@ export const BOOKS = [
   },
   {
     id: "JOS",
+    deShort: "Jos",
     kjv: "Joshua",
     de: "Josua",
     schlachter: "Das Buch Josua",
@@ -49,6 +55,7 @@ export const BOOKS = [
   },
   {
     id: "JDG",
+    deShort: "Ri",
     kjv: "Judges",
     de: "Richter",
     schlachter: "Das Buch der Richter",
@@ -56,6 +63,7 @@ export const BOOKS = [
   },
   {
     id: "RUT",
+    deShort: "Rut",
     kjv: "Ruth",
     de: "Ruth",
     schlachter: "Das Buch Ruth",
@@ -63,6 +71,7 @@ export const BOOKS = [
   },
   {
     id: "1SA",
+    deShort: "1 Sam",
     kjv: "1 Samuel",
     de: "1 Samuel",
     schlachter: "Das erste Buch Samuel",
@@ -70,6 +79,7 @@ export const BOOKS = [
   },
   {
     id: "2SA",
+    deShort: "2 Sam",
     kjv: "2 Samuel",
     de: "2 Samuel",
     schlachter: "Das zweite Buch Samuel",
@@ -77,6 +87,7 @@ export const BOOKS = [
   },
   {
     id: "1KI",
+    deShort: "1 Kön",
     kjv: "1 Kings",
     de: "1 Könige",
     schlachter: "Das erste Buch der Könige",
@@ -84,6 +95,7 @@ export const BOOKS = [
   },
   {
     id: "2KI",
+    deShort: "2 Kön",
     kjv: "2 Kings",
     de: "2 Könige",
     schlachter: "Das zweite Buch der Könige",
@@ -91,6 +103,7 @@ export const BOOKS = [
   },
   {
     id: "1CH",
+    deShort: "1 Chr",
     kjv: "1 Chronicles",
     de: "1 Chronik",
     schlachter: "Das erste Buch der Chronik",
@@ -98,6 +111,7 @@ export const BOOKS = [
   },
   {
     id: "2CH",
+    deShort: "2 Chr",
     kjv: "2 Chronicles",
     de: "2 Chronik",
     schlachter: "Das zweite Buch der Chronik",
@@ -105,6 +119,7 @@ export const BOOKS = [
   },
   {
     id: "EZR",
+    deShort: "Esra",
     kjv: "Ezra",
     de: "Esra",
     schlachter: "Das Buch Esra",
@@ -112,6 +127,7 @@ export const BOOKS = [
   },
   {
     id: "NEH",
+    deShort: "Neh",
     kjv: "Nehemiah",
     de: "Nehemia",
     schlachter: "Das Buch Nehemia",
@@ -119,6 +135,7 @@ export const BOOKS = [
   },
   {
     id: "EST",
+    deShort: "Est",
     kjv: "Esther",
     de: "Esther",
     schlachter: "Das Buch Esther",
@@ -126,6 +143,7 @@ export const BOOKS = [
   },
   {
     id: "JOB",
+    deShort: "Hiob",
     kjv: "Job",
     de: "Hiob",
     schlachter: "Das Buch Hiob",
@@ -133,6 +151,7 @@ export const BOOKS = [
   },
   {
     id: "PSA",
+    deShort: "Ps",
     kjv: "Psalms",
     de: "Psalmen",
     schlachter: "Die Psalmen",
@@ -140,6 +159,7 @@ export const BOOKS = [
   },
   {
     id: "PRO",
+    deShort: "Spr",
     kjv: "Proverbs",
     de: "Sprüche",
     schlachter: "Die Sprüche",
@@ -147,6 +167,7 @@ export const BOOKS = [
   },
   {
     id: "ECC",
+    deShort: "Pred",
     kjv: "Ecclesiastes",
     de: "Prediger",
     schlachter: "Der Prediger",
@@ -154,6 +175,7 @@ export const BOOKS = [
   },
   {
     id: "SNG",
+    deShort: "Hld",
     kjv: "Solomon's Song",
     de: "Hohelied",
     schlachter: "Das Hohelied",
@@ -161,6 +183,7 @@ export const BOOKS = [
   },
   {
     id: "ISA",
+    deShort: "Jes",
     kjv: "Isaiah",
     de: "Jesaja",
     schlachter: "Das Buch des Propheten Jesaja",
@@ -168,6 +191,7 @@ export const BOOKS = [
   },
   {
     id: "JER",
+    deShort: "Jer",
     kjv: "Jeremiah",
     de: "Jeremia",
     schlachter: "Das Buch des Propheten Jeremia",
@@ -175,6 +199,7 @@ export const BOOKS = [
   },
   {
     id: "LAM",
+    deShort: "Klgl",
     kjv: "Lamentations",
     de: "Klagelieder",
     schlachter: "Die Klagelieder Jeremias",
@@ -182,6 +207,7 @@ export const BOOKS = [
   },
   {
     id: "EZK",
+    deShort: "Hes",
     kjv: "Ezekiel",
     de: "Hesekiel",
     schlachter: "Das Buch des Propheten Hesekiel (Ezechiel)",
@@ -189,6 +215,7 @@ export const BOOKS = [
   },
   {
     id: "DAN",
+    deShort: "Dan",
     kjv: "Daniel",
     de: "Daniel",
     schlachter: "Das Buch des Propheten Daniel",
@@ -196,6 +223,7 @@ export const BOOKS = [
   },
   {
     id: "HOS",
+    deShort: "Hos",
     kjv: "Hosea",
     de: "Hosea",
     schlachter: "Das Buch des Propheten Hosea",
@@ -203,6 +231,7 @@ export const BOOKS = [
   },
   {
     id: "JOL",
+    deShort: "Joel",
     kjv: "Joel",
     de: "Joel",
     schlachter: "Das Buch des Propheten Joel",
@@ -210,6 +239,7 @@ export const BOOKS = [
   },
   {
     id: "AMO",
+    deShort: "Am",
     kjv: "Amos",
     de: "Amos",
     schlachter: "Das Buch des Propheten Amos",
@@ -217,6 +247,7 @@ export const BOOKS = [
   },
   {
     id: "OBA",
+    deShort: "Obd",
     kjv: "Obadiah",
     de: "Obadja",
     schlachter: "Das Buch des Propheten Obadja",
@@ -224,6 +255,7 @@ export const BOOKS = [
   },
   {
     id: "JON",
+    deShort: "Jona",
     kjv: "Jonah",
     de: "Jona",
     schlachter: "Das Buch des Propheten Jona",
@@ -231,6 +263,7 @@ export const BOOKS = [
   },
   {
     id: "MIC",
+    deShort: "Mi",
     kjv: "Micah",
     de: "Micha",
     schlachter: "Das Buch des Propheten Micha",
@@ -238,6 +271,7 @@ export const BOOKS = [
   },
   {
     id: "NAM",
+    deShort: "Nah",
     kjv: "Nahum",
     de: "Nahum",
     schlachter: "Das Buch des Propheten Nahum",
@@ -245,6 +279,7 @@ export const BOOKS = [
   },
   {
     id: "HAB",
+    deShort: "Hab",
     kjv: "Habakkuk",
     de: "Habakuk",
     schlachter: "Das Buch des Propheten Habakuk",
@@ -252,6 +287,7 @@ export const BOOKS = [
   },
   {
     id: "ZEP",
+    deShort: "Zef",
     kjv: "Zephaniah",
     de: "Zephanja",
     schlachter: "Das Buch des Propheten Zephanja",
@@ -259,6 +295,7 @@ export const BOOKS = [
   },
   {
     id: "HAG",
+    deShort: "Hag",
     kjv: "Haggai",
     de: "Haggai",
     schlachter: "Das Buch des Propheten Haggai",
@@ -266,6 +303,7 @@ export const BOOKS = [
   },
   {
     id: "ZEC",
+    deShort: "Sach",
     kjv: "Zechariah",
     de: "Sacharja",
     schlachter: "Das Buch des Propheten Sacharja",
@@ -273,6 +311,7 @@ export const BOOKS = [
   },
   {
     id: "MAL",
+    deShort: "Mal",
     kjv: "Malachi",
     de: "Maleachi",
     schlachter: "Das Buch des Propheten Maleachi",
@@ -280,6 +319,7 @@ export const BOOKS = [
   },
   {
     id: "MAT",
+    deShort: "Mt",
     kjv: "Matthew",
     de: "Matthäus",
     schlachter: "Das Evangelium nach Matthäus",
@@ -287,6 +327,7 @@ export const BOOKS = [
   },
   {
     id: "MRK",
+    deShort: "Mk",
     kjv: "Mark",
     de: "Markus",
     schlachter: "Das Evangelium nach Markus",
@@ -294,6 +335,7 @@ export const BOOKS = [
   },
   {
     id: "LUK",
+    deShort: "Lk",
     kjv: "Luke",
     de: "Lukas",
     schlachter: "Das Evangelium nach Lukas",
@@ -301,6 +343,7 @@ export const BOOKS = [
   },
   {
     id: "JHN",
+    deShort: "Joh",
     kjv: "John",
     de: "Johannes",
     schlachter: "Das Evangelium nach Johannes",
@@ -308,6 +351,7 @@ export const BOOKS = [
   },
   {
     id: "ACT",
+    deShort: "Apg",
     kjv: "Acts",
     de: "Apostelgeschichte",
     schlachter: "Die Apostelgeschichte",
@@ -315,6 +359,7 @@ export const BOOKS = [
   },
   {
     id: "ROM",
+    deShort: "Röm",
     kjv: "Romans",
     de: "Römer",
     schlachter: "Der Brief des Apostels Paulus an die Römer",
@@ -322,6 +367,7 @@ export const BOOKS = [
   },
   {
     id: "1CO",
+    deShort: "1 Kor",
     kjv: "1 Corinthians",
     de: "1 Korinther",
     schlachter: "Der erste Brief des Apostels Paulus an die Korinther",
@@ -329,6 +375,7 @@ export const BOOKS = [
   },
   {
     id: "2CO",
+    deShort: "2 Kor",
     kjv: "2 Corinthians",
     de: "2 Korinther",
     schlachter: "Der zweite Brief des Apostels Paulus an die Korinther",
@@ -336,6 +383,7 @@ export const BOOKS = [
   },
   {
     id: "GAL",
+    deShort: "Gal",
     kjv: "Galatians",
     de: "Galater",
     schlachter: "Der Brief des Apostels Paulus an die Galater",
@@ -343,6 +391,7 @@ export const BOOKS = [
   },
   {
     id: "EPH",
+    deShort: "Eph",
     kjv: "Ephesians",
     de: "Epheser",
     schlachter: "Der Brief des Apostels Paulus an die Epheser",
@@ -350,6 +399,7 @@ export const BOOKS = [
   },
   {
     id: "PHP",
+    deShort: "Phil",
     kjv: "Philippians",
     de: "Philipper",
     schlachter: "Der Brief des Apostels Paulus an die Philipper",
@@ -357,6 +407,7 @@ export const BOOKS = [
   },
   {
     id: "COL",
+    deShort: "Kol",
     kjv: "Colossians",
     de: "Kolosser",
     schlachter: "Der Brief des Apostels Paulus an die Kolosser",
@@ -364,6 +415,7 @@ export const BOOKS = [
   },
   {
     id: "1TH",
+    deShort: "1 Thess",
     kjv: "1 Thessalonians",
     de: "1 Thessalonicher",
     schlachter: "Der erste Brief des Apostels Paulus an die Thessalonicher",
@@ -371,6 +423,7 @@ export const BOOKS = [
   },
   {
     id: "2TH",
+    deShort: "2 Thess",
     kjv: "2 Thessalonians",
     de: "2 Thessalonicher",
     schlachter: "Der zweite Brief des Apostels Paulus an die Thessalonicher",
@@ -378,6 +431,7 @@ export const BOOKS = [
   },
   {
     id: "1TI",
+    deShort: "1 Tim",
     kjv: "1 Timothy",
     de: "1 Timotheus",
     schlachter: "Der erste Brief des Apostels Paulus an Timotheus",
@@ -385,6 +439,7 @@ export const BOOKS = [
   },
   {
     id: "2TI",
+    deShort: "2 Tim",
     kjv: "2 Timothy",
     de: "2 Timotheus",
     schlachter: "Der zweite Brief des Apostels Paulus an Timotheus",
@@ -392,6 +447,7 @@ export const BOOKS = [
   },
   {
     id: "TIT",
+    deShort: "Tit",
     kjv: "Titus",
     de: "Titus",
     schlachter: "Der Brief des Apostels Paulus an Titus",
@@ -399,6 +455,7 @@ export const BOOKS = [
   },
   {
     id: "PHM",
+    deShort: "Phlm",
     kjv: "Philemon",
     de: "Philemon",
     schlachter: "Der Brief des Apostels Paulus an Philemon",
@@ -406,6 +463,7 @@ export const BOOKS = [
   },
   {
     id: "HEB",
+    deShort: "Hebr",
     kjv: "Hebrews",
     de: "Hebräer",
     schlachter: "Der Brief an die Hebräer",
@@ -413,6 +471,7 @@ export const BOOKS = [
   },
   {
     id: "JAS",
+    deShort: "Jak",
     kjv: "James",
     de: "Jakobus",
     schlachter: "Der Brief des Jakobus",
@@ -420,6 +479,7 @@ export const BOOKS = [
   },
   {
     id: "1PE",
+    deShort: "1 Petr",
     kjv: "1 Peter",
     de: "1 Petrus",
     schlachter: "Der erste Brief des Apostels Petrus",
@@ -427,6 +487,7 @@ export const BOOKS = [
   },
   {
     id: "2PE",
+    deShort: "2 Petr",
     kjv: "2 Peter",
     de: "2 Petrus",
     schlachter: "Der zweite Brief des Apostels Petrus",
@@ -434,6 +495,7 @@ export const BOOKS = [
   },
   {
     id: "1JN",
+    deShort: "1 Joh",
     kjv: "1 John",
     de: "1 Johannes",
     schlachter: "Der erste Brief des Apostels Johannes",
@@ -441,6 +503,7 @@ export const BOOKS = [
   },
   {
     id: "2JN",
+    deShort: "2 Joh",
     kjv: "2 John",
     de: "2 Johannes",
     schlachter: "Der zweite Brief des Apostels Johannes",
@@ -448,6 +511,7 @@ export const BOOKS = [
   },
   {
     id: "3JN",
+    deShort: "3 Joh",
     kjv: "3 John",
     de: "3 Johannes",
     schlachter: "Der dritte Brief des Apostels Johannes",
@@ -455,6 +519,7 @@ export const BOOKS = [
   },
   {
     id: "JUD",
+    deShort: "Jud",
     kjv: "Jude",
     de: "Judas",
     schlachter: "Der Brief des Judas",
@@ -462,6 +527,7 @@ export const BOOKS = [
   },
   {
     id: "REV",
+    deShort: "Offb",
     kjv: "Revelation",
     de: "Offenbarung",
     schlachter: "Die Offenbarung Jesu Christi durch Johannes",
@@ -471,7 +537,10 @@ export const BOOKS = [
 
 const ALIAS_MAP = new Map();
 for (const book of BOOKS) {
-  for (const alias of [book.kjv, ...book.aliases]) {
+  // `id` is the standard English 3-letter abbreviation (Mat, Deu, ...);
+  // `deShort` is the equivalent short German form (Mt, 1 Mo, ...) - both
+  // accepted as input directly, not just the full names in `aliases`.
+  for (const alias of [book.id, book.deShort, book.kjv, ...book.aliases]) {
     ALIAS_MAP.set(alias.toLowerCase(), book);
   }
 }
@@ -485,4 +554,17 @@ function normalizeOrdinalPrefix(input) {
 export function findBook(input) {
   const key = normalizeOrdinalPrefix(input.trim()).toLowerCase();
   return ALIAS_MAP.get(key) || null;
+}
+
+// "MAT" -> "Mat", "1SA" -> "1Sa" - title-cases an all-caps id for display.
+function titleCaseId(id) {
+  return id.replace(/^(\d?)([A-Z])([A-Z]*)/, (_, digit, first, rest) => `${digit}${first}${rest.toLowerCase()}`);
+}
+
+// The short form a parsed reference gets rewritten to once resolved (see
+// updateVerse in main.js) - the English 3-letter id for KJV, or the
+// equivalent short German form for Schlachter, so it matches whichever
+// language the user is actually reading in.
+export function shortBookLabel(book, translation) {
+  return translation === "schlachter" ? book.deShort : titleCaseId(book.id);
 }

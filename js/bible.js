@@ -1,4 +1,4 @@
-import { BOOKS, findBook } from "./books.js";
+import { BOOKS, findBook, shortBookLabel } from "./books.js";
 
 // Schlachter 2000 is copyrighted and only vendored locally (gitignored, see
 // .gitignore) - it won't exist on the public deploy. Schlachter 1951 is a
@@ -148,6 +148,14 @@ export function formatReferenceLabel(ref, translation) {
   const bookName = translation === "schlachter" ? ref.book.de : ref.book.kjv;
   const label = translation === "schlachter" ? schlachterMeta().label : SOURCES[translation].label;
   return `${bookName} ${ref.chapter}:${range} (${label})`;
+}
+
+// Rewrites a resolved reference into its short form (e.g. "Mat 17:27" or,
+// for Schlachter, "5 Mo 6:4") - used to normalize whatever the user typed
+// once it's successfully parsed (see updateVerse in main.js).
+export function formatShortReference(ref, translation) {
+  const range = ref.verseStart === ref.verseEnd ? `${ref.verseStart}` : `${ref.verseStart}-${ref.verseEnd}`;
+  return `${shortBookLabel(ref.book, translation)} ${ref.chapter}:${range}`;
 }
 
 // e.g. "Mat-17-27-sch2000-versgenerator-de-standard" (size is an

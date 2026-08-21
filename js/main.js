@@ -1,4 +1,4 @@
-import { parseReference, getVerseText, formatReferenceLabel, formatFileName, getSchlachterLabel } from "./bible.js";
+import { parseReference, getVerseText, formatReferenceLabel, formatShortReference, formatFileName, getSchlachterLabel } from "./bible.js";
 import { nextPhoto, peekNextPhoto } from "./photos.js";
 import { renderCard, ASPECT_RATIOS, THEME, WALLPAPER_SAFE_ZONE, FONT_STACKS } from "./canvas.js";
 import {
@@ -320,6 +320,11 @@ async function updateVerse() {
     state.verseText = text;
     state.refLabel = formatReferenceLabel(ref, state.translation);
     showError(el.refError, "");
+    // Normalizes whatever the user typed ("Matthäus 17:27", "mat 17:27",
+    // "MAT 17:27"...) to a short, language-matched form once it resolves.
+    const shortRef = formatShortReference(ref, state.translation);
+    el.refInput.value = shortRef;
+    el.mobileRefInput.value = shortRef;
     if (state.translation === "schlachter") {
       // Reflects whichever edition actually loaded (2000 locally, 1951 on
       // the public deploy where 2000 is gitignored) once it's known.
@@ -953,6 +958,11 @@ function wireEvents() {
     updateVerse();
     saveSettings();
   });
+
+  // Selects the existing reference on focus, so typing immediately replaces
+  // it instead of requiring a manual select-all first.
+  el.refInput.addEventListener("focus", () => el.refInput.select());
+  el.mobileRefInput.addEventListener("focus", () => el.mobileRefInput.select());
 
   const onTranslationChange = (select, other) => () => {
     other.value = select.value;

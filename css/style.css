@@ -24,6 +24,11 @@ body {
   font-family: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
+  /* Kills iOS Safari's double-tap-to-zoom everywhere (still allows normal
+     scrolling/pinch-zoom - manipulation = pan-x pan-y pinch-zoom). The
+     canvas overrides this further with its own touch-action, since it also
+     needs to block native panning for the custom drag gesture. */
+  touch-action: manipulation;
 }
 
 .app {
@@ -476,6 +481,10 @@ button:hover {
     overflow: hidden;
   }
 
+  /* font-size is 16px (not the usual rem-based sizing) on every mobile
+     text input/select below - iOS Safari auto-zooms the page on focus for
+     any field whose computed font-size is under 16px, which fought with
+     this toolbar's own layout every time it happened. */
   #mobile-reference-input {
     flex: 1;
     min-width: 0;
@@ -484,7 +493,7 @@ button:hover {
     background: transparent;
     color: var(--text);
     padding: 0 8px;
-    font-size: 0.85rem;
+    font-size: 16px;
   }
 
   /* A native select's own dropdown arrow doesn't render reliably at these
@@ -499,6 +508,7 @@ button:hover {
     background-repeat: no-repeat;
     background-position: center right 6px;
     background-size: 11px;
+    font-size: 16px;
   }
 
   /* Shows only the dropdown chevron - the current translation intentionally
@@ -521,7 +531,6 @@ button:hover {
     width: 100%;
     height: 36px;
     padding: 0 22px 0 6px;
-    font-size: 0.8rem;
   }
 
   .mobile-icon-group {
