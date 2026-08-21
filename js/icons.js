@@ -55,11 +55,17 @@ export function renderWaterDropIcon(size = 16) {
   return svg;
 }
 
-// "Original" (unfiltered) - a plain open circle.
-export function renderCircleIcon(size = 16) {
-  const svg = iconSvg("icon-circle", size);
-  svg.appendChild(svgEl("circle", { cx: "12", cy: "12", r: "8" }));
-  return svg;
+// "Original" (unfiltered) - a small color wheel. The one deliberate break
+// from the otherwise-monochrome icon set: a plain circle didn't read as
+// "color" clearly enough next to Silvertone's half-filled circle, and
+// legibility won out over strict consistency here.
+export function renderColorWheelIcon(size = 16) {
+  const span = document.createElement("span");
+  span.className = "icon-color-wheel";
+  span.style.width = `${size}px`;
+  span.style.height = `${size}px`;
+  span.setAttribute("aria-hidden", "true");
+  return span;
 }
 
 // "Silvertone" - a circle with one half filled, the standard monochrome

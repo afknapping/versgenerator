@@ -3,7 +3,7 @@ import { nextPhoto, peekNextPhoto } from "./photos.js";
 import { renderCard, ASPECT_RATIOS, THEME, WALLPAPER_SAFE_ZONE, FONT_STACKS } from "./canvas.js";
 import {
   renderPhoneIcon, renderReloadIcon, renderMountainIcon, renderWaterDropIcon,
-  renderCircleIcon, renderHalfCircleIcon, renderMinusIcon, renderPlusIcon,
+  renderColorWheelIcon, renderHalfCircleIcon, renderMinusIcon, renderPlusIcon,
   renderChevronDownIcon, renderDownloadIcon,
 } from "./icons.js";
 import { saveCard } from "./export.js";
@@ -633,7 +633,7 @@ function buildMobileRow2() {
     { key: "water", ariaLabel: "Water photos (tap again to change picture)", renderIcon: () => renderWaterDropIcon() },
   ], state.imageSource, selectSource));
   el.mobileRow2.appendChild(buildMobileIconGroup([
-    { key: "color", ariaLabel: "Original", renderIcon: () => renderCircleIcon() },
+    { key: "color", ariaLabel: "Original", renderIcon: () => renderColorWheelIcon() },
     { key: "bw", ariaLabel: "Silvertone", renderIcon: () => renderHalfCircleIcon() },
   ], state.bw ? "bw" : "color", (key) => setFilter(key === "bw")));
   el.mobileRow2.appendChild(buildMobileStepper({

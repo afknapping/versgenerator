@@ -546,6 +546,17 @@ button:hover {
     color: #fff;
   }
 
+  /* "Original" - the one deliberate break from the monochrome icon set
+     (see renderColorWheelIcon): a real color wheel reads as "color" far
+     more clearly than a plain circle ever could next to Silvertone's
+     half-filled one. */
+  .icon-color-wheel {
+    display: inline-block;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  }
+
   /* Text-theme icons are a literal live preview of each option's own
      colors, rather than an arbitrary glyph. */
   .mobile-theme-swatch {
