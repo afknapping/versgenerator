@@ -385,51 +385,274 @@ button:hover {
   display: none;
 }
 
-/* Below this width there isn't room for preview + panel side by side, so
-   the panel docks over the preview instead (fixed width, unchanged) rather
-   than pushing it down the page. */
+/* Mobile-only compact toolbar and its floating save pill/toast - hidden by
+   default (desktop keeps the .side panel above), shown replacing it below
+   the 900px breakpoint. See the media query at the bottom of this file. */
+#mobile-toolbar,
+#mobile-save {
+  display: none;
+}
+
+.mobile-toast {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 2;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(20, 20, 20, 0.92);
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.mobile-toast[hidden] {
+  display: none;
+}
+
+/* Below this width there isn't room for preview + panel side by side, so a
+   compact icon toolbar replaces the desktop .side panel entirely, docked
+   above the preview in normal flow (pushes it down, never overlays it),
+   with a floating Save pill over the image. Desktop's own panel (.side)
+   plays no part below this width - it's simply hidden. */
 @media (max-width: 900px) {
   .layout {
     display: block;
   }
 
-  /* Pinned to the viewport so scrolling the (possibly tall, overflowing)
-     panel never scrolls the preview out of view. */
-  .preview-wrap {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 0;
-  }
-
   .side {
-    position: fixed;
+    display: none;
+  }
+
+  #mobile-toolbar,
+  #mobile-save {
+    display: flex;
+  }
+
+  #mobile-toolbar {
+    /* Pushes the image down in normal flow, but pins to the top once
+       scrolled past - important for phone wallpaper mode, where the very
+       tall canvas often needs the page to scroll to see all of it. */
+    position: sticky;
     top: 0;
-    right: 0;
-    background: var(--panel-overlay);
-    border-radius: 12px 0 0 12px;
-    --side-padding: 4px;
-    padding: var(--side-padding);
-    gap: 8px;
-    z-index: 1;
+    z-index: 2;
+    flex-direction: column;
+    gap: 4px;
+    background: #000;
+    padding: 6px;
+    transition: opacity 0.4s ease;
   }
 
-  #panel-content {
-    gap: 8px;
-  }
-
-  #panel-toggle {
-    display: block;
-    padding: 6px 8px;
-  }
-
-  /* While the rule-of-thirds grid is up (zooming/resizing text/dragging),
-     the panel fades almost out of the way so it doesn't block the framing
-     you're actively adjusting. Only relevant here, where the panel floats
-     over the photo - docked beside it (base layout) it isn't blocking
-     anything, so dimming it there would just make it harder to read. */
-  .side.dimmed {
+  /* While the rule-of-thirds grid is up (zooming/dragging), the toolbar
+     fades almost out of the way so it doesn't block the framing you're
+     actively adjusting. */
+  #mobile-toolbar.dimmed {
     opacity: 0.25;
+  }
+
+  .mobile-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .mobile-ref-group {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #111;
+    overflow: hidden;
+  }
+
+  #mobile-reference-input {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    padding: 0 8px;
+    font-size: 0.85rem;
+  }
+
+  /* Shows only the dropdown chevron - the current translation intentionally
+     isn't visible here to stay compact; the full labeled list still appears
+     in the native picker sheet on tap. */
+  /* A native select's own dropdown arrow doesn't render reliably at these
+     sizes on iOS Safari (particularly the 26px-wide translation select
+     below - not enough room for WebKit's own chevron), so both draw their
+     own instead via appearance:none + a background-image chevron, rather
+     than depending on the platform's control decoration at all. */
+  .mobile-inline-select,
+  .mobile-aspect-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center right 6px;
+    background-size: 11px;
+  }
+
+  .mobile-inline-select {
+    width: 26px;
+    flex-shrink: 0;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-left: 1px solid #444;
+    background-color: transparent;
+    background-position: center;
+    color: transparent;
+    text-align: center;
+  }
+
+  .mobile-aspect-select {
+    flex-shrink: 0;
+    width: auto;
+    height: 30px;
+    padding: 0 22px 0 6px;
+    font-size: 0.8rem;
+  }
+
+  .mobile-icon-row {
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .mobile-icon-group {
+    display: flex;
+    border: 1px solid #444;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .mobile-icon-group button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    border-right: 1px solid #444;
+  }
+
+  .mobile-icon-group button:last-child {
+    border-right: none;
+  }
+
+  .mobile-icon-group button[aria-pressed="true"] {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Text-theme icons are a literal live preview of each option's own
+     colors, rather than an arbitrary glyph. */
+  .mobile-theme-swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .mobile-theme-swatch-light {
+    background: #fff;
+    color: #000;
+  }
+
+  .mobile-theme-swatch-dark {
+    background: #000;
+    color: #fff;
+  }
+
+  #mobile-save {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  .mobile-save-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 16px;
+    background: #000;
+    border: 1px solid #fff;
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    color: #fff;
+    font-weight: 800;
+  }
+
+  .mobile-save-dropdown-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 40px;
+    padding: 0;
+    background: #000;
+    border: 1px solid #fff;
+    border-radius: 0 6px 6px 0;
+    color: #fff;
+  }
+
+  .mobile-save-dropdown-btn[hidden] {
+    display: none;
+  }
+
+  /* When there's no dropdown (wallpaper mode - see mobileSaveOptions), the
+     plain Save button reclaims the rounded right corner on its own. */
+  #mobile-save:has(.mobile-save-dropdown-btn[hidden]) .mobile-save-btn {
+    border-right: 1px solid #fff;
+    border-radius: 6px;
+  }
+
+  .mobile-save-menu {
+    position: absolute;
+    bottom: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    border: 1px solid #fff;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .mobile-save-menu[hidden] {
+    display: none;
+  }
+
+  .mobile-save-menu button {
+    height: 36px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid #444;
+    background: #000;
+    color: #fff;
+    text-align: left;
+    white-space: nowrap;
+    font-size: 0.8rem;
+  }
+
+  .mobile-save-menu button:last-child {
+    border-bottom: none;
   }
 }

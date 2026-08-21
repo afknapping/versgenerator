@@ -12,6 +12,26 @@
 <body>
   <div class="app">
     <div class="layout">
+      <!-- Compact mobile toolbar - narrow viewports only (see the max-width:
+           900px media query), replaces .side there entirely. Sits above the
+           preview in normal document flow (pushes it down, never overlays
+           it). Built mostly by main.js; the static markup here is just the
+           row/group scaffolding. -->
+      <div id="mobile-toolbar" class="mobile-toolbar">
+        <div class="mobile-row">
+          <div class="mobile-ref-group">
+            <input id="mobile-reference-input" type="text" placeholder="e.g. John 3:16 or Psalm 23:1-6" aria-label="Verse reference" />
+            <select id="mobile-translation-select" class="mobile-inline-select" aria-label="Translation">
+              <option value="schlachter">Schlachter 2000</option>
+              <option value="kjv">KJV</option>
+            </select>
+          </div>
+          <select id="mobile-aspect-select" class="mobile-aspect-select" aria-label="Aspect ratio"></select>
+        </div>
+        <div id="mobile-row-2" class="mobile-row mobile-icon-row"></div>
+        <div id="mobile-row-3" class="mobile-row mobile-icon-row"></div>
+      </div>
+
       <section class="preview-wrap">
         <div class="canvas-stage">
           <canvas id="preview-canvas"></canvas>
@@ -20,10 +40,17 @@
             <div class="safe-zone-band safe-zone-top"><span>Clock / status bar</span></div>
             <div class="safe-zone-band safe-zone-bottom"><span>Widgets / shortcuts / nav bar</span></div>
           </div>
+          <p id="mobile-toast" class="mobile-toast" hidden></p>
         </div>
         <p id="photo-credit" class="credit" hidden></p>
         <input id="upload-input" type="file" accept="image/*" hidden />
       </section>
+
+      <div id="mobile-save" class="mobile-save">
+        <button id="mobile-save-btn" type="button" class="mobile-save-btn"><span id="mobile-save-label"></span></button>
+        <button id="mobile-save-dropdown-btn" type="button" class="mobile-save-dropdown-btn" aria-haspopup="true" aria-expanded="false" aria-label="More save options"></button>
+        <div id="mobile-save-menu" class="mobile-save-menu" hidden></div>
+      </div>
 
       <div class="side">
         <button id="panel-toggle" type="button" class="link-button">Hide settings</button>
@@ -76,6 +103,10 @@
 
           <div class="control-row">
             <div id="filter-buttons" class="toggle-group"></div>
+          </div>
+
+          <div class="control-row">
+            <div id="vignette-buttons" class="toggle-group"></div>
           </div>
         </section>
 

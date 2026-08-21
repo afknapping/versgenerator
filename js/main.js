@@ -1,7 +1,11 @@
 import { parseReference, getVerseText, formatReferenceLabel, formatFileName, getSchlachterLabel } from "./bible.js";
 import { nextPhoto, peekNextPhoto } from "./photos.js";
 import { renderCard, ASPECT_RATIOS, THEME, WALLPAPER_SAFE_ZONE, FONT_STACKS } from "./canvas.js";
-import { renderPhoneIcon, renderReloadIcon } from "./icons.js";
+import {
+  renderPhoneIcon, renderReloadIcon, renderMountainIcon, renderWaterDropIcon,
+  renderCircleIcon, renderHalfCircleIcon, renderMinusIcon, renderPlusIcon,
+  renderChevronDownIcon, renderDownloadIcon,
+} from "./icons.js";
 import { saveCard } from "./export.js";
 
 const PREVIEW_WIDTH = 640;
@@ -37,6 +41,7 @@ const state = {
   focalPoint: saved.focalPoint ?? { x: 50, y: 50 },
   zoom: saved.zoom ?? THEME.defaultZoom,
   bw: saved.bw ?? true,
+  vignette: saved.vignette ?? true,
   aspectKey: saved.aspectKey ?? "portrait",
   // "mountain" | "water" | "upload" - fall back to "mountain" if a
   // previous session persisted "upload" while it's disabled (see
@@ -59,6 +64,7 @@ function saveSettings() {
     translation: state.translation,
     aspectKey: state.aspectKey,
     bw: state.bw,
+    vignette: state.vignette,
     imageSource: state.imageSource,
     textTheme: state.textTheme,
     fontStyle: state.fontStyle,
@@ -81,6 +87,7 @@ const el = {
   translationSelect: document.getElementById("translation-select"),
   refError: document.getElementById("reference-error"),
   filterButtons: document.getElementById("filter-buttons"),
+  vignetteButtons: document.getElementById("vignette-buttons"),
   sourceButtons: document.getElementById("source-buttons"),
   uploadInput: document.getElementById("upload-input"),
   aspectButtons: document.getElementById("aspect-buttons"),
@@ -100,6 +107,18 @@ const el = {
   gridOverlay: document.getElementById("grid-overlay"),
   wallpaperSafeOverlay: document.getElementById("wallpaper-safe-overlay"),
   side: document.querySelector(".side"),
+  mobileToast: document.getElementById("mobile-toast"),
+  mobileToolbar: document.getElementById("mobile-toolbar"),
+  mobileRefInput: document.getElementById("mobile-reference-input"),
+  mobileTranslationSelect: document.getElementById("mobile-translation-select"),
+  mobileAspectSelect: document.getElementById("mobile-aspect-select"),
+  mobileRow2: document.getElementById("mobile-row-2"),
+  mobileRow3: document.getElementById("mobile-row-3"),
+  mobileSave: document.getElementById("mobile-save"),
+  mobileSaveBtn: document.getElementById("mobile-save-btn"),
+  mobileSaveLabel: document.getElementById("mobile-save-label"),
+  mobileSaveDropdownBtn: document.getElementById("mobile-save-dropdown-btn"),
+  mobileSaveMenu: document.getElementById("mobile-save-menu"),
 };
 
 const ctx = el.canvas.getContext("2d");
@@ -115,16 +134,37 @@ let gridFadeTimer = null;
 function showGrid() {
   el.gridOverlay.classList.add("visible");
   el.side.classList.add("dimmed");
+  el.mobileToolbar.classList.add("dimmed");
   if (state.aspectKey === "wallpaper") el.wallpaperSafeOverlay.classList.add("visible");
   clearTimeout(gridFadeTimer);
   gridFadeTimer = setTimeout(() => {
     el.gridOverlay.classList.remove("visible");
     el.side.classList.remove("dimmed");
+    el.mobileToolbar.classList.remove("dimmed");
     el.wallpaperSafeOverlay.classList.remove("visible");
   }, GRID_FADE_DELAY);
 }
 
+// The mobile toolbar has no room for inline error text (see showError) - a
+// toast banner over the photo stands in for it there. Desktop already shows
+// the same message inline, so the toast is CSS-hidden outside mobile widths.
+const TOAST_FADE_DELAY = 4000;
+let toastFadeTimer = null;
+function showToast(message) {
+  clearTimeout(toastFadeTimer);
+  if (!message) {
+    el.mobileToast.hidden = true;
+    return;
+  }
+  el.mobileToast.textContent = message;
+  el.mobileToast.hidden = false;
+  toastFadeTimer = setTimeout(() => {
+    el.mobileToast.hidden = true;
+  }, TOAST_FADE_DELAY);
+}
+
 function showError(node, message) {
+  showToast(message);
   if (!message) {
     node.hidden = true;
     return;
@@ -149,6 +189,7 @@ function cardParams() {
     focalPoint: state.focalPoint,
     zoom: state.zoom,
     bw: state.bw,
+    vignette: state.vignette,
     verseText: state.verseText,
     refLabel: state.refLabel,
     stripeOpacity: THEME.defaultStripeOpacity,
@@ -289,7 +330,9 @@ async function updateVerse() {
     if (state.translation === "schlachter") {
       // Reflects whichever edition actually loaded (2000 locally, 1951 on
       // the public deploy where 2000 is gitignored) once it's known.
-      el.translationSelect.querySelector('option[value="schlachter"]').textContent = getSchlachterLabel();
+      const label = getSchlachterLabel();
+      el.translationSelect.querySelector('option[value="schlachter"]').textContent = label;
+      el.mobileTranslationSelect.querySelector('option[value="schlachter"]').textContent = label;
     }
     render();
   } catch (err) {
@@ -380,31 +423,45 @@ function usableHeightFraction(key) {
   return key === "wallpaper" ? 1 - WALLPAPER_SAFE_ZONE.topRatio - WALLPAPER_SAFE_ZONE.bottomRatio : 1;
 }
 
+// Shared by the desktop toggle group and the mobile aspect <select> - the
+// only two controls for this. Preview/export width is held fixed per ratio,
+// so canvas *height* changes with the ratio - scale text to track that
+// (usable) height change so it keeps roughly the same relative size instead
+// of the same textScale looking bigger/smaller as the frame gets
+// shorter/taller.
+function selectAspect(key) {
+  const oldRatio = ASPECT_RATIOS[state.aspectKey];
+  const newRatio = ASPECT_RATIOS[key];
+  const oldUsable = (oldRatio.h / oldRatio.w) * usableHeightFraction(state.aspectKey);
+  const newUsable = (newRatio.h / newRatio.w) * usableHeightFraction(key);
+  const heightFactor = newUsable / oldUsable;
+  setTextScale(Math.round(state.textScale * heightFactor * 100));
+
+  state.aspectKey = key;
+  // Keeps the stripe clear of the reserved bottom zone by default - still
+  // freely draggable from there like any other ratio.
+  if (key === "wallpaper") state.stripeBottomRatio = THEME.wallpaperSafeStripeBottomRatio;
+  resizePreviewCanvas();
+  updateSaveRowVisibility();
+  updateWallpaperSafeZoneVisibility();
+  updateMobileSaveMenu();
+  render();
+  saveSettings();
+  buildAspectButtons();
+  el.mobileAspectSelect.value = key;
+}
+
 function buildAspectButtons() {
   const options = Object.entries(ASPECT_RATIOS).map(([key, ratio]) => ({ key, label: ratio.label, ratio }));
-  buildToggleGroup(el.aspectButtons, options, state.aspectKey, (key) => {
-    // Preview/export width is held fixed per ratio, so canvas *height*
-    // changes with the ratio - scale text to track that (usable) height
-    // change so it keeps roughly the same relative size instead of the same
-    // textScale looking bigger/smaller as the frame gets shorter/taller.
-    const oldRatio = ASPECT_RATIOS[state.aspectKey];
-    const newRatio = ASPECT_RATIOS[key];
-    const oldUsable = (oldRatio.h / oldRatio.w) * usableHeightFraction(state.aspectKey);
-    const newUsable = (newRatio.h / newRatio.w) * usableHeightFraction(key);
-    const heightFactor = newUsable / oldUsable;
-    state.textScale = Math.min(THEME.maxTextScale, Math.max(THEME.minTextScale, state.textScale * heightFactor));
-    el.textSizeSlider.value = Math.round(state.textScale * 100);
+  buildToggleGroup(el.aspectButtons, options, state.aspectKey, selectAspect, { renderIcon: renderAspectIcon });
+}
 
-    state.aspectKey = key;
-    // Keeps the stripe clear of the reserved bottom zone by default - still
-    // freely draggable from there like any other ratio.
-    if (key === "wallpaper") state.stripeBottomRatio = THEME.wallpaperSafeStripeBottomRatio;
-    resizePreviewCanvas();
-    updateSaveRowVisibility();
-    updateWallpaperSafeZoneVisibility();
-    render();
-    saveSettings();
-  }, { renderIcon: renderAspectIcon });
+function setFilter(isBw) {
+  state.bw = isBw;
+  render();
+  saveSettings();
+  buildFilterButtons();
+  buildMobileRow2();
 }
 
 function buildFilterButtons() {
@@ -412,28 +469,40 @@ function buildFilterButtons() {
     { key: "color", label: "Original" },
     { key: "bw", label: "Silvertone" },
   ];
-  buildToggleGroup(el.filterButtons, options, state.bw ? "bw" : "color", (key) => {
-    state.bw = key === "bw";
-    render();
-    saveSettings();
-  });
+  buildToggleGroup(el.filterButtons, options, state.bw ? "bw" : "color", (key) => setFilter(key === "bw"));
+}
+
+function setVignette(on) {
+  state.vignette = on;
+  render();
+  saveSettings();
+  buildVignetteButtons();
+}
+
+function buildVignetteButtons() {
+  const options = [
+    { key: "on", label: "Vignette on" },
+    { key: "off", label: "Vignette off" },
+  ];
+  buildToggleGroup(el.vignetteButtons, options, state.vignette ? "on" : "off", (key) => setVignette(key === "on"));
 }
 
 // Switches the active image source and syncs the toggle UI to match.
 // `loadPhoto: false` is used right before loading a just-dropped file, so
 // we don't fetch-then-immediately-discard a random "upload" photo (there
-// isn't one). Rebuilds the toggle group (rather than just updating
-// aria-pressed) so the shuffle icon - see buildSourceButtons - relocates to
-// whichever button is now selected.
+// isn't one). Rebuilds the toggle groups (rather than just updating
+// aria-pressed) so the reload icon - see buildSourceButtons - relocates to
+// whichever button is now selected, on both desktop and mobile.
 function selectSource(key, { loadPhoto = true } = {}) {
   state.imageSource = key;
   buildSourceButtons();
+  buildMobileRow2();
   saveSettings();
   if (loadPhoto && key !== "upload") loadPhotoForSource(key);
 }
 
 // There's no separate "change picture" button - the currently-selected
-// source button doubles as one (shuffle icon, re-clicking it cycles to a
+// source button doubles as one (reload icon, re-clicking it cycles to a
 // new photo for that source; buildToggleGroup already fires onSelect on
 // every click regardless of whether that option was already selected).
 function buildSourceButtons() {
@@ -453,30 +522,262 @@ function buildSourceButtons() {
   });
 }
 
+function setTextTheme(key) {
+  state.textTheme = key;
+  render();
+  saveSettings();
+  buildTextThemeButtons();
+  buildMobileRow3();
+}
+
 function buildTextThemeButtons() {
   const options = [
     { key: "light", label: "Black on white text" },
     { key: "dark", label: "White on black text" },
   ];
-  buildToggleGroup(el.textThemeButtons, options, state.textTheme, (key) => {
-    state.textTheme = key;
-    render();
-    saveSettings();
-  });
+  buildToggleGroup(el.textThemeButtons, options, state.textTheme, setTextTheme);
+}
+
+function setFontStyle(key) {
+  state.fontStyle = key;
+  render();
+  saveSettings();
+  buildFontButtons();
+  buildMobileRow3();
 }
 
 // Each option's own label previews its font, so the choice is visible
 // before picking it rather than just named.
 function buildFontButtons() {
   const options = Object.entries(FONT_STACKS).map(([key, font]) => ({ key, label: font.label, font }));
-  buildToggleGroup(el.fontButtons, options, state.fontStyle, (key) => {
-    state.fontStyle = key;
-    render();
-    saveSettings();
-  }, {
+  buildToggleGroup(el.fontButtons, options, state.fontStyle, setFontStyle, {
     styleButton: (button, opt) => {
       button.style.fontFamily = opt.font.fontFamily;
     },
+  });
+}
+
+function setZoom(percent) {
+  const clamped = Math.min(THEME.maxZoom * 100, Math.max(THEME.minZoom * 100, percent));
+  state.zoom = clamped / 100;
+  el.zoomSlider.value = clamped;
+  showGrid();
+  render();
+  saveSettings();
+}
+
+function setTextScale(percent) {
+  const clamped = Math.min(THEME.maxTextScale * 100, Math.max(THEME.minTextScale * 100, percent));
+  state.textScale = clamped / 100;
+  el.textSizeSlider.value = clamped;
+  showGrid();
+  render();
+  saveSettings();
+}
+
+// --- Mobile toolbar (< 900px) -----------------------------------------
+// A separate, icon-only DOM tree replacing the desktop .side panel there
+// (see the max-width: 900px media query in style.css). Each control reuses
+// the same state-mutating setter as its desktop counterpart above, so the
+// two stay in sync regardless of which one a change came from.
+
+const ZOOM_STEP = 10; // percentage points per tap (slider is 100-300)
+const TEXT_SIZE_STEP = 5; // percentage points per tap (slider is 20-160)
+
+// One connected pair/group of icon-only buttons, e.g. Mountain/Water. No
+// visible label - `ariaLabel` is the only thing identifying each option to
+// assistive tech, so it needs to be a real description, not just the key.
+function buildMobileIconGroup(options, selectedKey, onSelect) {
+  const group = document.createElement("div");
+  group.className = "mobile-icon-group";
+  for (const opt of options) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("aria-pressed", opt.key === selectedKey ? "true" : "false");
+    button.setAttribute("aria-label", opt.ariaLabel);
+    button.appendChild(opt.renderIcon());
+    button.addEventListener("click", () => onSelect(opt.key));
+    group.appendChild(button);
+  }
+  return group;
+}
+
+// A -/+ pair with no "selected" state - each tap just nudges a value by a
+// fixed step (see ZOOM_STEP/TEXT_SIZE_STEP), replacing the desktop sliders'
+// continuous drag with something that fits a 30px-tall icon row.
+function buildMobileStepper({ decLabel, incLabel, onDecrement, onIncrement }) {
+  const group = document.createElement("div");
+  group.className = "mobile-icon-group";
+  const dec = document.createElement("button");
+  dec.type = "button";
+  dec.setAttribute("aria-label", decLabel);
+  dec.appendChild(renderMinusIcon());
+  dec.addEventListener("click", onDecrement);
+  const inc = document.createElement("button");
+  inc.type = "button";
+  inc.setAttribute("aria-label", incLabel);
+  inc.appendChild(renderPlusIcon());
+  inc.addEventListener("click", onIncrement);
+  group.appendChild(dec);
+  group.appendChild(inc);
+  return group;
+}
+
+// Row 2: source, filter, zoom.
+function buildMobileRow2() {
+  el.mobileRow2.innerHTML = "";
+  el.mobileRow2.appendChild(buildMobileIconGroup([
+    { key: "mountain", ariaLabel: "Mountain photos (tap again to change picture)", renderIcon: () => renderMountainIcon() },
+    { key: "water", ariaLabel: "Water photos (tap again to change picture)", renderIcon: () => renderWaterDropIcon() },
+  ], state.imageSource, selectSource));
+  el.mobileRow2.appendChild(buildMobileIconGroup([
+    { key: "color", ariaLabel: "Original", renderIcon: () => renderCircleIcon() },
+    { key: "bw", ariaLabel: "Silvertone", renderIcon: () => renderHalfCircleIcon() },
+  ], state.bw ? "bw" : "color", (key) => setFilter(key === "bw")));
+  el.mobileRow2.appendChild(buildMobileStepper({
+    decLabel: "Zoom out",
+    incLabel: "Zoom in",
+    onDecrement: () => setZoom(Math.round(state.zoom * 100) - ZOOM_STEP),
+    onIncrement: () => setZoom(Math.round(state.zoom * 100) + ZOOM_STEP),
+  }));
+}
+
+// Row 3: font, text theme, text size.
+function buildMobileRow3() {
+  el.mobileRow3.innerHTML = "";
+  el.mobileRow3.appendChild(buildMobileIconGroup(
+    Object.entries(FONT_STACKS).map(([key, font]) => ({
+      key,
+      ariaLabel: `${font.label} font`,
+      renderIcon: () => {
+        const span = document.createElement("span");
+        span.textContent = "Aa";
+        span.style.fontFamily = font.fontFamily;
+        span.style.fontWeight = "800";
+        span.style.fontSize = "0.75rem";
+        return span;
+      },
+    })),
+    state.fontStyle,
+    setFontStyle,
+  ));
+  el.mobileRow3.appendChild(buildMobileIconGroup([
+    {
+      key: "light",
+      ariaLabel: "Black on white text",
+      renderIcon: () => {
+        const span = document.createElement("span");
+        span.textContent = "A";
+        span.className = "mobile-theme-swatch mobile-theme-swatch-light";
+        return span;
+      },
+    },
+    {
+      key: "dark",
+      ariaLabel: "White on black text",
+      renderIcon: () => {
+        const span = document.createElement("span");
+        span.textContent = "A";
+        span.className = "mobile-theme-swatch mobile-theme-swatch-dark";
+        return span;
+      },
+    },
+  ], state.textTheme, setTextTheme));
+  el.mobileRow3.appendChild(buildMobileStepper({
+    decLabel: "Smaller text",
+    incLabel: "Bigger text",
+    onDecrement: () => setTextScale(Math.round(state.textScale * 100) - TEXT_SIZE_STEP),
+    onIncrement: () => setTextScale(Math.round(state.textScale * 100) + TEXT_SIZE_STEP),
+  }));
+}
+
+// Unicode glyphs standing in for the desktop's proportion swatches - a
+// native <select>'s options can only hold plain text, not SVG/DOM icons.
+const MOBILE_ASPECT_GLYPHS = {
+  portrait: "▯",
+  square: "□",
+  landscape: "▭",
+  wide: "▬",
+};
+
+function buildMobileAspectSelect() {
+  el.mobileAspectSelect.innerHTML = "";
+  for (const [key, ratio] of Object.entries(ASPECT_RATIOS)) {
+    const opt = document.createElement("option");
+    opt.value = key;
+    const glyph = MOBILE_ASPECT_GLYPHS[key];
+    opt.textContent = glyph ? `${glyph} ${ratio.label}` : ratio.label;
+    el.mobileAspectSelect.appendChild(opt);
+  }
+  el.mobileAspectSelect.value = state.aspectKey;
+  el.mobileAspectSelect.addEventListener("change", () => selectAspect(el.mobileAspectSelect.value));
+}
+
+// Mirrors updateSaveRowVisibility's per-ratio logic, just expressed as one
+// primary preset (the pill's direct-click action) plus an optional
+// secondary one (the dropdown's only entry): wallpaper has no secondary
+// (the primary preset is already sized for a retina phone screen), 16:9
+// gets HD/4K, everything else gets standard/high-resolution.
+function mobileSaveOptions() {
+  if (state.aspectKey === "wallpaper") return { primary: "standard", primaryLabel: "Save", secondary: null };
+  if (state.aspectKey === "wide") return { primary: "hd", primaryLabel: "Save HD", secondary: "4k", secondaryLabel: "Save 4K" };
+  return { primary: "standard", primaryLabel: "Save", secondary: "highres", secondaryLabel: "Save high resolution version" };
+}
+
+function closeMobileSaveMenu() {
+  el.mobileSaveMenu.hidden = true;
+  el.mobileSaveDropdownBtn.setAttribute("aria-expanded", "false");
+}
+
+// Rebuilt whenever the aspect ratio changes (see selectAspect) since the
+// dropdown's one option depends on it.
+function updateMobileSaveMenu() {
+  const { primaryLabel, secondary, secondaryLabel } = mobileSaveOptions();
+  el.mobileSaveLabel.textContent = primaryLabel;
+  el.mobileSaveMenu.innerHTML = "";
+  el.mobileSaveDropdownBtn.hidden = !secondary;
+  if (!secondary) {
+    closeMobileSaveMenu();
+    return;
+  }
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = secondaryLabel;
+  button.addEventListener("click", () => {
+    doSave(secondary);
+    closeMobileSaveMenu();
+  });
+  el.mobileSaveMenu.appendChild(button);
+}
+
+// The pill's own label describes what a plain click does (e.g. "Save HD"
+// for 16:9 - see mobileSaveOptions), kept in sync by updateMobileSaveMenu
+// whenever the aspect ratio changes. Picking the dropdown's option fires
+// immediately too (there's no "select then confirm" step), but never
+// changes the pill's own label - it always reflects the *primary* action.
+function wireMobileSave() {
+  el.mobileSaveBtn.insertBefore(renderDownloadIcon(), el.mobileSaveLabel);
+  el.mobileSaveDropdownBtn.appendChild(renderChevronDownIcon());
+
+  el.mobileSaveBtn.addEventListener("click", () => doSave(mobileSaveOptions().primary));
+  el.mobileSaveDropdownBtn.addEventListener("click", () => {
+    const willOpen = el.mobileSaveMenu.hidden;
+    el.mobileSaveMenu.hidden = !willOpen;
+    el.mobileSaveDropdownBtn.setAttribute("aria-expanded", String(willOpen));
+  });
+  document.addEventListener("click", (e) => {
+    if (!el.mobileSave.contains(e.target)) closeMobileSaveMenu();
+  });
+}
+
+// Keeps the desktop and mobile reference/translation controls mirrored, so
+// whichever one is visible (only one is, per the 900px breakpoint) always
+// reflects the same value - e.g. after resizing the window or rotating a
+// device mid-session.
+function wireMirroredInput(input, other, onChange) {
+  input.addEventListener("change", () => {
+    other.value = input.value;
+    onChange();
   });
 }
 
@@ -609,45 +910,45 @@ function wireUpload() {
   });
 }
 
+function doSave(presetKey) {
+  if (!state.image || !state.verseText || !state.ref) return;
+  const fileNameBase = formatFileName(state.ref, state.translation, presetKey);
+  saveCard(presetKey, currentRatio(), cardParams(), fileNameBase);
+}
+
 function wireEvents() {
   el.panelToggle.addEventListener("click", () => {
     el.panelContent.hidden = !el.panelContent.hidden;
     el.panelToggle.textContent = el.panelContent.hidden ? "Show settings" : "Hide settings";
   });
 
-  el.refInput.addEventListener("change", () => {
+  wireMirroredInput(el.refInput, el.mobileRefInput, () => {
     updateVerse();
     saveSettings();
   });
-  el.translationSelect.addEventListener("change", () => {
-    state.translation = el.translationSelect.value;
+  wireMirroredInput(el.mobileRefInput, el.refInput, () => {
     updateVerse();
     saveSettings();
   });
 
-  el.zoomSlider.addEventListener("input", () => {
-    state.zoom = Number(el.zoomSlider.value) / 100;
-    showGrid();
-    render();
+  const onTranslationChange = (select, other) => () => {
+    other.value = select.value;
+    state.translation = select.value;
+    updateVerse();
     saveSettings();
-  });
-
-  el.textSizeSlider.addEventListener("input", () => {
-    state.textScale = Number(el.textSizeSlider.value) / 100;
-    showGrid();
-    render();
-    saveSettings();
-  });
-
-  const doSave = (presetKey) => {
-    if (!state.image || !state.verseText || !state.ref) return;
-    const fileNameBase = formatFileName(state.ref, state.translation, presetKey);
-    saveCard(presetKey, currentRatio(), cardParams(), fileNameBase);
   };
+  el.translationSelect.addEventListener("change", onTranslationChange(el.translationSelect, el.mobileTranslationSelect));
+  el.mobileTranslationSelect.addEventListener("change", onTranslationChange(el.mobileTranslationSelect, el.translationSelect));
+
+  el.zoomSlider.addEventListener("input", () => setZoom(Number(el.zoomSlider.value)));
+  el.textSizeSlider.addEventListener("input", () => setTextScale(Number(el.textSizeSlider.value)));
+
   el.saveStandardBtn.addEventListener("click", () => doSave("standard"));
   el.saveHighresBtn.addEventListener("click", () => doSave("highres"));
   el.saveHdBtn.addEventListener("click", () => doSave("hd"));
   el.save4kBtn.addEventListener("click", () => doSave("4k"));
+
+  wireMobileSave();
 }
 
 function loadInitialPhoto() {
@@ -677,21 +978,28 @@ async function ensureFontsLoaded() {
 
 async function init() {
   el.translationSelect.value = state.translation;
+  el.mobileTranslationSelect.value = state.translation;
   el.zoomSlider.value = Math.round(state.zoom * 100);
   el.textSizeSlider.value = Math.round(state.textScale * 100);
 
   resizePreviewCanvas();
   buildAspectButtons();
+  buildMobileAspectSelect();
   buildFilterButtons();
+  buildVignetteButtons();
   buildSourceButtons();
   buildTextThemeButtons();
   buildFontButtons();
+  buildMobileRow2();
+  buildMobileRow3();
   updateSaveRowVisibility();
+  updateMobileSaveMenu();
   updateWallpaperSafeZoneVisibility();
   wireDrag();
   if (UPLOAD_ENABLED) wireUpload();
   wireEvents();
   el.refInput.value = saved.reference ?? DEFAULT_REFERENCE;
+  el.mobileRefInput.value = el.refInput.value;
   updateVerse();
   await ensureFontsLoaded();
   loadInitialPhoto();

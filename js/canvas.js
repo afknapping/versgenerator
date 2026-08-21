@@ -32,9 +32,14 @@ export const THEME = {
   creditFontRatio: 0.016,
   creditBottomMarginRatio: 0.016,
   creditOpacity: 0.55,
+  // Vignette matching iOS Photos' own vignette effect at its max (100)
+  // strength: darkening starts a bit past a third of the way out from
+  // center and reaches this alpha of black exactly at the corners.
+  vignetteInnerRadiusRatio: 0.35,
+  vignetteMaxAlpha: 0.75,
 };
 
-export const SILVERTONE_FILTER = "grayscale(0.9) contrast(1.15) brightness(1.08)";
+export const SILVERTONE_FILTER = "grayscale(1) contrast(1.15) brightness(1.08)";
 
 // "Modern" is the app's original sans-serif; "classic" is the earmarked
 // serif alternative for a more traditional look. Both need the same weight
@@ -46,10 +51,10 @@ export const FONT_STACKS = {
 };
 
 export const ASPECT_RATIOS = {
-  portrait: { label: "3:4", w: 3, h: 4 },
-  square: { label: "1:1", w: 1, h: 1 },
-  landscape: { label: "4:3", w: 4, h: 3 },
-  wide: { label: "16:9", w: 16, h: 9 },
+  portrait: { label: "Portrait 3:4", w: 3, h: 4 },
+  square: { label: "Square 1:1", w: 1, h: 1 },
+  landscape: { label: "Landscape 4:3", w: 4, h: 3 },
+  wide: { label: "Widescreen 16:9", w: 16, h: 9 },
   // Taller than any current mainstream phone (modern iPhones/Androids top
   // out around 19.5:9-21:9) so cover-fit is always width-constrained: full
   // width shows with no horizontal crop, and any overflow crops top/bottom
@@ -58,7 +63,7 @@ export const ASPECT_RATIOS = {
   // text off the sides. As a bonus, the same text occupies a smaller
   // fraction of a taller frame, giving it more effective room relative to
   // the fixed-percentage safe zones below.
-  wallpaper: { label: "Phone wallpaper", w: 9, h: 21 },
+  wallpaper: { label: "Phone Wallpaper", w: 9, h: 21 },
 };
 
 // Screen areas a lock-screen wallpaper needs to stay clear of - status bar,
@@ -88,10 +93,27 @@ function wrapText(ctx, text, maxWidth) {
   return lines;
 }
 
+// Darkens toward the corners - radius reaches exactly to the farthest
+// corner from center, so the effect is always anchored to the frame itself
+// regardless of the photo's own pan/zoom.
+function drawVignette(ctx, canvasWidth, canvasHeight) {
+  const cx = canvasWidth / 2;
+  const cy = canvasHeight / 2;
+  const outerRadius = Math.hypot(cx, cy);
+  const gradient = ctx.createRadialGradient(
+    cx, cy, outerRadius * THEME.vignetteInnerRadiusRatio,
+    cx, cy, outerRadius
+  );
+  gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+  gradient.addColorStop(1, `rgba(0, 0, 0, ${THEME.vignetteMaxAlpha})`);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+}
+
 // Draws the source image into ctx, cover-cropped to canvasWidth x
 // canvasHeight. `focalPoint` is {x, y} in 0-100. `zoom` >= 1 scales the image
 // up beyond the minimum cover-fit, giving the focal point room to pan.
-function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw) {
+function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw, vignette) {
   const coverScale = Math.max(canvasWidth / image.naturalWidth, canvasHeight / image.naturalHeight);
   const scale = coverScale * zoom;
   const drawWidth = image.naturalWidth * scale;
@@ -102,6 +124,7 @@ function drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom,
   ctx.filter = bw ? SILVERTONE_FILTER : "none";
   ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
   ctx.filter = "none";
+  if (vignette) drawVignette(ctx, canvasWidth, canvasHeight);
 }
 
 // Computes stripe + text geometry for canvasWidth x canvasHeight, without
@@ -143,6 +166,7 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
   focalPoint,
   zoom,
   bw,
+  vignette = true,
   verseText,
   refLabel,
   stripeOpacity,
@@ -155,7 +179,7 @@ export function renderCard(ctx, canvasWidth, canvasHeight, {
 }) {
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-  drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw);
+  drawImageLayer(ctx, canvasWidth, canvasHeight, image, focalPoint, zoom, bw, vignette);
 
   const layout = computeLayout(ctx, canvasWidth, canvasHeight, { verseText, textScale, stripeBottomRatio, sidePaddingRatio, fontFamily });
   const { versePx, refPx, vPadding, refGap, verseLines, verseLineHeight, verseBlockHeight, stripeY, stripeHeight } = layout;
