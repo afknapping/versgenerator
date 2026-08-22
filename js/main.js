@@ -35,8 +35,15 @@ const saved = loadSettings();
 const state = {
   ref: null,
   translation: saved.translation ?? "schlachter",
-  verseText: "",
-  refLabel: "",
+  // null (not "") marks "not resolved yet this session" - distinct from a
+  // legitimately empty lookup - see applyResolvedVerse's isFirstResolve.
+  verseText: null,
+  refLabel: null,
+  // The customizable quote/source actually shown on the card - normally
+  // mirrors verseText/refLabel, but can diverge once edited via the
+  // "Customize quote" panel (see applyResolvedVerse, wireCustomizeQuote).
+  quoteText: saved.quoteText ?? "",
+  sourceText: saved.sourceText ?? "",
   image: null,
   focalPoint: saved.focalPoint ?? { x: 50, y: 50 },
   zoom: saved.zoom ?? THEME.defaultZoom,
@@ -72,6 +79,8 @@ function saveSettings() {
     focalPoint: state.focalPoint,
     photoUrl: state.photoUrl,
     photoCredit: state.photoCredit,
+    quoteText: state.quoteText,
+    sourceText: state.sourceText,
   }));
 }
 
@@ -94,6 +103,11 @@ const el = {
   textSizeSlider: document.getElementById("text-size-slider"),
   photoError: document.getElementById("photo-error"),
   photoCredit: document.getElementById("photo-credit"),
+  customizeToggle: document.getElementById("customize-quote-toggle"),
+  customizePanel: document.getElementById("customize-quote-panel"),
+  customizeQuoteInput: document.getElementById("customize-quote-text"),
+  customizeSourceInput: document.getElementById("customize-quote-source"),
+  mobileRefGroup: document.getElementById("mobile-ref-group"),
   canvas: document.getElementById("preview-canvas"),
   saveStandardRow: document.getElementById("save-standard"),
   saveWideRow: document.getElementById("save-wide"),
@@ -167,6 +181,67 @@ function showError(node, message) {
   node.hidden = false;
 }
 
+// Dims the reference input / translation controls while a custom quote or
+// source is active, signaling they're no longer what's driving the card.
+function updateCustomizedDimming() {
+  const customized = state.quoteText !== state.verseText || state.sourceText !== state.refLabel;
+  el.refInput.classList.toggle("dims-when-customized", customized);
+  el.translationSelect.classList.toggle("dims-when-customized", customized);
+  el.mobileRefGroup.classList.toggle("dims-when-customized", customized);
+}
+
+// Updates the auto-derived verse baseline (verseText/refLabel) and syncs
+// the customizable quote/source to match - unless this is the very first
+// resolution of the session and a customization was already persisted from
+// a prior session, in which case that's kept instead of the freshly
+// looked-up text (a reload restoring the same reference shouldn't silently
+// wipe out an earlier customization).
+function applyResolvedVerse(text, refLabel) {
+  const isFirstResolve = state.verseText === null;
+  const changed = !isFirstResolve && (text !== state.verseText || refLabel !== state.refLabel);
+  state.verseText = text;
+  state.refLabel = refLabel;
+  if (isFirstResolve) {
+    if (!state.quoteText) state.quoteText = text;
+    if (!state.sourceText) state.sourceText = refLabel;
+  } else if (changed) {
+    state.quoteText = text;
+    state.sourceText = refLabel;
+  }
+  if (!el.customizePanel.hidden) {
+    el.customizeQuoteInput.value = state.quoteText;
+    el.customizeSourceInput.value = state.sourceText;
+  }
+  updateCustomizedDimming();
+}
+
+// "Customize quote": an inline panel below the photo credit line, toggled
+// open/closed by its own link. Always opens pre-filled with whatever's
+// currently shown (state.quoteText/sourceText); editing either field
+// overrides the card directly (see cardParams) and dims the reference
+// controls (see updateCustomizedDimming) until a new reference or
+// translation resolves and resets it (see applyResolvedVerse).
+function wireCustomizeQuote() {
+  el.customizeToggle.addEventListener("click", () => {
+    const opening = el.customizePanel.hidden;
+    el.customizePanel.hidden = !opening;
+    if (opening) {
+      el.customizeQuoteInput.value = state.quoteText;
+      el.customizeSourceInput.value = state.sourceText;
+    }
+  });
+
+  const onEdit = () => {
+    state.quoteText = el.customizeQuoteInput.value;
+    state.sourceText = el.customizeSourceInput.value;
+    updateCustomizedDimming();
+    render();
+    saveSettings();
+  };
+  el.customizeQuoteInput.addEventListener("input", onEdit);
+  el.customizeSourceInput.addEventListener("input", onEdit);
+}
+
 function currentRatio() {
   return ASPECT_RATIOS[state.aspectKey];
 }
@@ -183,8 +258,8 @@ function cardParams() {
     focalPoint: state.focalPoint,
     zoom: state.zoom,
     bw: state.bw,
-    verseText: state.verseText,
-    refLabel: state.refLabel,
+    verseText: state.quoteText,
+    refLabel: state.sourceText,
     stripeOpacity: THEME.defaultStripeOpacity,
     textTheme: state.textTheme,
     fontFamily: FONT_STACKS[state.fontStyle].fontFamily,
@@ -196,7 +271,7 @@ function cardParams() {
 }
 
 function render() {
-  if (!state.image || !state.verseText) return;
+  if (!state.image || !state.quoteText) return;
   lastLayout = renderCard(ctx, el.canvas.width, el.canvas.height, cardParams());
 }
 
@@ -299,8 +374,7 @@ async function updateVerse() {
   const input = el.refInput.value.trim();
   if (!input) {
     state.ref = null;
-    state.verseText = "(verse missing)";
-    state.refLabel = "";
+    applyResolvedVerse("(verse missing)", "");
     showError(el.refError, "");
     render();
     return;
@@ -317,8 +391,7 @@ async function updateVerse() {
       return;
     }
     state.ref = ref;
-    state.verseText = text;
-    state.refLabel = formatReferenceLabel(ref, state.translation);
+    applyResolvedVerse(text, formatReferenceLabel(ref, state.translation));
     showError(el.refError, "");
     // Normalizes whatever the user typed ("Matthäus 17:27", "mat 17:27",
     // "MAT 17:27"...) to a short, language-matched form once it resolves.
@@ -939,7 +1012,7 @@ function wireUpload() {
 }
 
 function doSave(presetKey) {
-  if (!state.image || !state.verseText || !state.ref) return;
+  if (!state.image || !state.quoteText || !state.ref) return;
   const fileNameBase = formatFileName(state.ref, state.translation, presetKey);
   saveCard(presetKey, currentRatio(), cardParams(), fileNameBase);
 }
@@ -950,12 +1023,12 @@ function wireEvents() {
     el.panelToggle.textContent = el.panelContent.hidden ? "Show settings" : "Hide settings";
   });
 
-  wireMirroredInput(el.refInput, el.mobileRefInput, () => {
-    updateVerse();
+  wireMirroredInput(el.refInput, el.mobileRefInput, async () => {
+    await updateVerse();
     saveSettings();
   });
-  wireMirroredInput(el.mobileRefInput, el.refInput, () => {
-    updateVerse();
+  wireMirroredInput(el.mobileRefInput, el.refInput, async () => {
+    await updateVerse();
     saveSettings();
   });
 
@@ -964,10 +1037,10 @@ function wireEvents() {
   el.refInput.addEventListener("focus", () => el.refInput.select());
   el.mobileRefInput.addEventListener("focus", () => el.mobileRefInput.select());
 
-  const onTranslationChange = (select, other) => () => {
+  const onTranslationChange = (select, other) => async () => {
     other.value = select.value;
     state.translation = select.value;
-    updateVerse();
+    await updateVerse();
     saveSettings();
   };
   el.translationSelect.addEventListener("change", onTranslationChange(el.translationSelect, el.mobileTranslationSelect));
@@ -982,6 +1055,7 @@ function wireEvents() {
   el.save4kBtn.addEventListener("click", () => doSave("4k"));
 
   wireMobileSave();
+  wireCustomizeQuote();
 }
 
 function loadInitialPhoto() {

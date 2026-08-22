@@ -19,7 +19,7 @@
            row/group scaffolding. -->
       <div id="mobile-toolbar" class="mobile-toolbar">
         <div class="mobile-grid">
-          <div class="mobile-ref-group">
+          <div id="mobile-ref-group" class="mobile-ref-group">
             <input id="mobile-reference-input" type="text" placeholder="e.g. John 3:16 or Psalm 23:1-6" aria-label="Verse reference" />
             <select id="mobile-translation-select" class="mobile-inline-select" aria-label="Translation">
               <option value="schlachter">Schlachter 2000</option>
@@ -50,6 +50,13 @@
           <p id="mobile-toast" class="mobile-toast" hidden></p>
         </div>
         <p id="photo-credit" class="credit" hidden></p>
+        <button id="customize-quote-toggle" type="button" class="credit-link">Customize quote</button>
+        <div id="customize-quote-panel" class="customize-quote-panel" hidden>
+          <label for="customize-quote-text">Quote</label>
+          <textarea id="customize-quote-text" rows="5"></textarea>
+          <label for="customize-quote-source">Source</label>
+          <input id="customize-quote-source" type="text" />
+        </div>
         <input id="upload-input" type="file" accept="image/*" hidden />
       </section>
 

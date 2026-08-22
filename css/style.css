@@ -214,6 +214,59 @@ button:hover {
   color: var(--muted);
 }
 
+/* Same size/color as .credit above it, but interactive - underlined so it
+   still reads as clickable despite the muted, low-key styling. */
+.credit-link {
+  display: block;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.customize-quote-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 4px;
+}
+
+.customize-quote-panel[hidden] {
+  display: none;
+}
+
+.customize-quote-panel label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.customize-quote-panel textarea,
+.customize-quote-panel input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #111;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+/* The verse reference / translation controls fade out while a custom
+   quote/source is active, signaling they're no longer what's driving the
+   card - typing a new reference (or switching translation) still works and
+   clears the customization, restoring these to full opacity. */
+.dims-when-customized {
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
 .preview-wrap {
   display: flex;
   flex-direction: column;
@@ -221,6 +274,9 @@ button:hover {
   gap: 8px;
   flex: 1 1 auto;
   min-width: 0;
+  /* Breathing room below whatever's currently last - the "Customize quote"
+     link when its panel is closed, or the source input when it's open. */
+  padding-bottom: 24px;
 }
 
 .canvas-stage {
