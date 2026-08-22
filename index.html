@@ -48,6 +48,16 @@
             <div class="safe-zone-band safe-zone-bottom"><span>Widgets / shortcuts / nav bar</span></div>
           </div>
           <p id="mobile-toast" class="mobile-toast" hidden></p>
+
+          <!-- Positioned relative to the canvas stage (straddling its
+               bottom edge), not the viewport - so it always sits half over
+               the image itself regardless of how much content (photo
+               credit, customize-quote panel) follows below it. -->
+          <div id="mobile-save" class="mobile-save">
+            <button id="mobile-save-btn" type="button" class="mobile-save-btn"><span id="mobile-save-label"></span></button>
+            <button id="mobile-save-dropdown-btn" type="button" class="mobile-save-dropdown-btn" aria-haspopup="true" aria-expanded="false" aria-label="More save options"></button>
+            <div id="mobile-save-menu" class="mobile-save-menu" hidden></div>
+          </div>
         </div>
         <p id="photo-credit" class="credit" hidden></p>
         <button id="customize-quote-toggle" type="button" class="credit-link">Customize quote</button>
@@ -59,12 +69,6 @@
         </div>
         <input id="upload-input" type="file" accept="image/*" hidden />
       </section>
-
-      <div id="mobile-save" class="mobile-save">
-        <button id="mobile-save-btn" type="button" class="mobile-save-btn"><span id="mobile-save-label"></span></button>
-        <button id="mobile-save-dropdown-btn" type="button" class="mobile-save-dropdown-btn" aria-haspopup="true" aria-expanded="false" aria-label="More save options"></button>
-        <div id="mobile-save-menu" class="mobile-save-menu" hidden></div>
-      </div>
 
       <div class="side">
         <button id="panel-toggle" type="button" class="link-button">Hide settings</button>

@@ -669,12 +669,16 @@ button:hover {
     margin-left: 1px;
   }
 
+  /* Straddles the canvas's own bottom edge (half over the image, half
+     below it) rather than being pinned to the viewport - keeps it from
+     drifting onto unrelated content (photo credit, customize-quote panel)
+     that follows below the image. */
   #mobile-save {
-    position: fixed;
+    position: absolute;
     left: 50%;
-    bottom: 12px;
-    transform: translateX(-50%);
-    z-index: 2;
+    bottom: 0;
+    transform: translate(-50%, 50%);
+    z-index: 3;
   }
 
   .mobile-save-btn {
